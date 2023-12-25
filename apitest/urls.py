@@ -15,6 +15,7 @@ from apitest.views import (
     EstimatedetailAPI,
     PlydetailsAPI,
     TransactionAPI,
+    UserDetailsView,
     UserdetailAPI,
 )
 
@@ -35,5 +36,6 @@ urlpatterns = [
     path("api/", include(router.urls)),
     path("api/UploadCode/", Base64CodeView.as_view(), name="store_base64_code"),
     path("api/SpecificBusiness/<int:businessid>/", SpecificBusinessAPI.as_view()),
+    path('api/userdetails/', UserDetailsView.as_view(), name='userdetails-api'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

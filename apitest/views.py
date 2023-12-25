@@ -1562,3 +1562,30 @@ class SpecificBusinessAPI(generics.ListAPIView):
         businessid = self.kwargs["businessid"]
         return Estimatedetails.objects.filter(businessid=businessid)
     
+
+# API for user and admin
+class UserDetailsView(generics.ListAPIView):
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        mobileno = self.request.query_params.get('mobileno')
+        androidid = self.request.query_params.get('androidid')
+        business_id = self.request.query_params.get('business_id')
+
+        # Verify mobileno and androidid
+        user = Userdetails.objects.filter(mobileno=mobileno, androidid=androidid).first()
+
+        if user:
+            # Check user role based on business_id
+            if user.businessid == int(business_id):
+                if user.userrole == 'admin':
+                    # Display all records under that business id
+                    queryset = Userdetails.objects.filter(businessid=business_id)
+                else:
+                    # Display record of that specific business id for user
+                    queryset = Userdetails.objects.filter(businessid=business_id, userid=user.userid)
+                return queryset
+            else:
+                return Userdetails.objects.none()  # Return an empty queryset if the user doesn't have access to this business_id
+        else:
+            return Userdetails.objects.none()  # Return an empty queryset if user credentials are invalid
