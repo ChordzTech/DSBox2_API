@@ -1,0 +1,33 @@
+Changes when uploading project on server 
+
+for cors-headers : pip install django-cors-headers
+
+for mysql install : pip install mysql-connector-python
+
+for static files : pip install whitenoise
+
+use database engine: mysql.connector.django
+
+Changes in setting.py
+
+INSTALLED_APPS = [
+
+	'corsheaders',
+]
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+MIDDLEWARE = [
+	
+	'corsheaders.middleware.CorsMiddleware',	
+	'whitenoise.middleware.WhiteNoiseMiddleware',
+
+] 
+
+##Static files 
+
+STATIC_URL = '/static/'
+# STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
