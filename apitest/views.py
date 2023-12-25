@@ -1556,36 +1556,80 @@ class UserdetailAPI(ModelViewSet):
 
 # API for Estimates and clients for Specific BusinessID
 class SpecificBusinessAPI(generics.ListAPIView):
-    serialiazer_class = EstimatedetailSerializer
+    serializer_class = EstimatedetailSerializer
 
     def get_queryset(self):
-        businessid = self.kwargs["businessid"]
-        return Estimatedetails.objects.filter(businessid=businessid)
+        business_id = self.kwargs["businessid"]
+        return Estimatedetails.objects.filter(businessid=business_id)
+
+    def list(self, request, *args, **kwargs):
+        business_id = self.kwargs["businessid"]
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        if queryset.exists():
+            data = {
+                'status': 'success',
+                'code': status.HTTP_200_OK,
+                'message': f'Estimates for BusinessID: {business_id}',
+                'data': serializer.data
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        else:
+            data = {
+                'status': 'failure',
+                'code': status.HTTP_404_NOT_FOUND,
+                'message': f'No estimates found for BusinessID: {business_id}',
+                'data': []
+            }
+            return Response(data, status=status.HTTP_404_NOT_FOUND)
     
 
 # API for user and admin
 class UserDetailsView(generics.ListAPIView):
     serializer_class = UserSerializer
 
-    def get_queryset(self):
-        mobileno = self.request.query_params.get('mobileno')
-        androidid = self.request.query_params.get('androidid')
-        business_id = self.request.query_params.get('business_id')
+    def get(self, request, user_id=None, *args, **kwargs):
+        try:
+            # Fetch user details using user_id
+            user = Userdetails.objects.get(userid=user_id)
 
-        # Verify mobileno and androidid
-        user = Userdetails.objects.filter(mobileno=mobileno, androidid=androidid).first()
+            # Extract androidid and mobileno from the fetched user
+            androidid = user.androidid
+            mobileno = user.mobileno
 
-        if user:
-            # Check user role based on business_id
-            if user.businessid == int(business_id):
-                if user.userrole == 'admin':
-                    # Display all records under that business id
-                    queryset = Userdetails.objects.filter(businessid=business_id)
-                else:
-                    # Display record of that specific business id for user
-                    queryset = Userdetails.objects.filter(businessid=business_id, userid=user.userid)
-                return queryset
-            else:
-                return Userdetails.objects.none()  # Return an empty queryset if the user doesn't have access to this business_id
-        else:
-            return Userdetails.objects.none()  # Return an empty queryset if user credentials are invalid
+            if user.userrole == 'Admin':
+                queryset = Userdetails.objects.filter(businessid=user.businessid)
+                serializer = self.serializer_class(queryset, many=True)
+                return Response({
+                    'status': 'success',
+                    'code': status.HTTP_200_OK,
+                    'message': f'All records for UserID: {user_id}',
+                    'data': serializer.data
+                })
+            elif user.userrole == 'User':
+                queryset = Userdetails.objects.filter(businessid=user.businessid, userid=user_id)
+                serializer = self.serializer_class(queryset, many=True)
+                return Response({
+                    'status': 'success',
+                    'code': status.HTTP_200_OK,
+                    'message':  f'All records for UserID: {user_id}',
+                    'data': serializer.data
+                })
+        except Userdetails.DoesNotExist:
+            return Response({
+                'status': 'error',
+                'code': status.HTTP_404_NOT_FOUND,
+                'message': f'User with ID {user_id} not found',
+                'data': []
+            })
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
+                'message': 'An error occurred',
+                'data': str(e)
+            })
+
+   
+
+

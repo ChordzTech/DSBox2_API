@@ -34,8 +34,8 @@ router.register(r"UserDetails", UserdetailAPI)
 
 urlpatterns = [
     path("api/", include(router.urls)),
-    path("api/UploadCode/", Base64CodeView.as_view(), name="store_base64_code"),
-    path("api/SpecificBusiness/<int:businessid>/", SpecificBusinessAPI.as_view()),
-    path('api/userdetails/', UserDetailsView.as_view(), name='userdetails-api'),
+    path("api/UploadCode/", Base64CodeView.as_view()),
+    path("api/EstimatesByBusinessID/<int:businessid>/", SpecificBusinessAPI.as_view()),
+    path('api/UsersByRole/<int:user_id>/', UserDetailsView.as_view()),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
