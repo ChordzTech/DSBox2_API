@@ -1,5 +1,4 @@
 import os
-import base64
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework import generics
@@ -35,7 +34,6 @@ from .serializers import (
     UserSerializer,
 )
 
-
 # API for Image Code
 class Base64CodeView(APIView):
     serializer_class = Base64CodeSerializer
@@ -62,7 +60,6 @@ class Base64CodeView(APIView):
             return Response(response_data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 # API for Administrator
 class AdministratorAPI(ModelViewSet):
@@ -140,6 +137,10 @@ class AdministratorAPI(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
+            adminpassword = request.data.get("adminpassword")
+            hashpassword = make_password(adminpassword)
+            request.data["adminpassword"] = hashpassword
+            # print(check_password('Actual Password', 'encrypted password'))
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -162,6 +163,10 @@ class AdministratorAPI(ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         try:
+            adminpassword = request.data.get("adminpassword")
+            hashpassword = make_password(adminpassword)
+            request.data["adminpassword"] = hashpassword
+            # print(check_password('Actual Password', 'encrypted password'))
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -202,7 +207,6 @@ class AdministratorAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
 
 # API for Appconfig
 class AppconfigAPI(ModelViewSet):
@@ -336,7 +340,6 @@ class AppconfigAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
 
 # API for Business Details
 class BusinessDetailsAPI(ModelViewSet):
@@ -473,7 +476,6 @@ class BusinessDetailsAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-
 # API for Businesses
 class BusinessesAPI(ModelViewSet):
     queryset = Businesses.objects.all()
@@ -606,7 +608,6 @@ class BusinessesAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
 
 # API for Client Details
 class ClientDetailsAPI(ModelViewSet):
@@ -741,7 +742,6 @@ class ClientDetailsAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-
 # API for Developers
 class DevelopersAPI(ModelViewSet):
     queryset = Developers.objects.all()
@@ -818,6 +818,10 @@ class DevelopersAPI(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
+            developerpassword = request.data.get("developerpassword")
+            hashpassword = make_password(developerpassword)
+            request.data["developerpassword"] = hashpassword
+            # print(check_password('Actual Password', 'encrypted password'))
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -840,6 +844,10 @@ class DevelopersAPI(ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         try:
+            developerpassword = request.data.get("developerpassword")
+            hashpassword = make_password(developerpassword)
+            request.data["developerpassword"] = hashpassword
+            # print(check_password('Actual Password', 'encrypted password'))
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -878,7 +886,6 @@ class DevelopersAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
 
 # API for Estimatedetails
 class EstimatedetailAPI(ModelViewSet):
@@ -1013,7 +1020,6 @@ class EstimatedetailAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-
 # API for Plydetails
 class PlydetailsAPI(ModelViewSet):
     queryset = Plydetails.objects.all()
@@ -1146,7 +1152,6 @@ class PlydetailsAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
 
 # API for Subscription
 class SubscriptionDetailsAPI(ModelViewSet):
@@ -1281,7 +1286,6 @@ class SubscriptionDetailsAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-
 # API for Transaction
 class TransactionAPI(ModelViewSet):
     queryset = Transactiondetails.objects.all()
@@ -1415,7 +1419,6 @@ class TransactionAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-
 # API for User Details
 class UserdetailAPI(ModelViewSet):
     queryset = Userdetails.objects.all()
@@ -1492,6 +1495,10 @@ class UserdetailAPI(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
+            userpassword = request.data.get("userpassword")
+            hashpassword = make_password(userpassword)
+            request.data["userpassword"] = hashpassword
+            # print(check_password('Actual Password', 'encrypted password'))
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -1514,6 +1521,10 @@ class UserdetailAPI(ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         try:
+            userpassword = request.data.get("userpassword")
+            hashpassword = make_password(userpassword)
+            request.data["userpassword"] = hashpassword
+            # print(check_password('Actual Password', 'encrypted password'))
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -1553,9 +1564,8 @@ class UserdetailAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-
-# API for Estimates and clients for Specific BusinessID
-class SpecificBusinessAPI(generics.ListAPIView):
+# API for Estimates by BusinessID
+class EstimatesByBusinessID(generics.ListAPIView):
     serializer_class = EstimatedetailSerializer
 
     def get_queryset(self):
@@ -1583,9 +1593,8 @@ class SpecificBusinessAPI(generics.ListAPIView):
             }
             return Response(data, status=status.HTTP_404_NOT_FOUND)
     
-
-# API for user and admin
-class UserDetailsView(generics.ListAPIView):
+# API for Userlist by Role
+class UserListByRole(generics.ListAPIView):
     serializer_class = UserSerializer
 
     def get(self, request, user_id=None, *args, **kwargs):
@@ -1629,7 +1638,90 @@ class UserDetailsView(generics.ListAPIView):
                 'message': 'An error occurred',
                 'data': str(e)
             })
-
    
+# API for Estimates By USerID
+class EstimatesByUser(generics.ListAPIView):
+    serializer_class = EstimatedetailSerializer
+
+    def get(self, request, user_id=None, *args, **kwargs):
+        try:
+            # Fetch user details using user_id from Userdetails table
+            user = Userdetails.objects.get(userid=user_id)
+
+            if user.userrole == 'Admin':
+                # Fetch all estimates for Admin users based on businessid
+                queryset = Estimatedetails.objects.filter(businessid=user.businessid)
+            elif user.userrole == 'User':
+                # Fetch estimates for regular Users based on businessid and userid
+                # Check if the user_id exists under the provided businessid as a 'User'
+                user_exists = Userdetails.objects.filter(userid=user_id, businessid=user.businessid, userrole='User').exists()
+                if not user_exists:
+                    return Response({
+                        'status': 'error',
+                        'code': status.HTTP_404_NOT_FOUND,
+                        'message': f'User {user_id} not found under this role or business',
+                        'data': []
+                    })
+
+                queryset = Estimatedetails.objects.filter(businessid=user.businessid, userid=user_id)
+
+            # Serialize the queryset data
+            serializer = self.serializer_class(queryset, many=True)
+
+            # Prepare and return the response
+            return Response({
+                'status': 'success',
+                'code': status.HTTP_200_OK,
+                'message': f'All estimates for User: {user_id}',
+                'data': serializer.data
+            })
+
+        except Userdetails.DoesNotExist:
+            return Response({
+                'status': 'error',
+                'code': status.HTTP_404_NOT_FOUND,
+                'message': f'User {user_id} not found',
+                'data': []
+            })
+
+        except Exception as e:
+            # Handle any other unexpected errors
+            return Response({
+                'status': 'error',
+                'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
+                'message': 'An error occurred',
+                'data': str(e)
+            })
+    
+# API for Estimates by ClientID
+class EstimatesByClient(generics.ListAPIView):
+    serializer_class = EstimatedetailSerializer
+
+    def get_queryset(self):
+        client_id = self.kwargs.get("clientid")
+        queryset = Estimatedetails.objects.filter(clientid=client_id)
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        client_id = self.kwargs.get("clientid")
+        queryset = self.get_queryset()
+
+        serializer = self.get_serializer(queryset, many=True)
+        if queryset.exists():
+            data = {
+                'status': 'success',
+                'code': status.HTTP_200_OK,
+                'message': f'Estimates for ClientID: {client_id}',
+                'data': serializer.data
+            }
+            return Response(data, status=status.HTTP_200_OK)
+
+        data = {
+            'status': 'failure',
+            'code': status.HTTP_404_NOT_FOUND,
+            'message': f'No estimates found for ClientID: {client_id}',
+            'data': []
+        }
+        return Response(data, status=status.HTTP_404_NOT_FOUND)
 
 

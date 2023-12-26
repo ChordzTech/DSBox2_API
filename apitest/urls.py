@@ -10,13 +10,15 @@ from apitest.views import (
     BusinessesAPI,
     ClientDetailsAPI,
     DevelopersAPI,
-    SpecificBusinessAPI,
-    SubscriptionDetailsAPI,
+    EstimatesByBusinessID,
+    EstimatesByClient,
+    EstimatesByUser,
     EstimatedetailAPI,
     PlydetailsAPI,
+    SubscriptionDetailsAPI,
     TransactionAPI,
-    UserDetailsView,
     UserdetailAPI,
+    UserListByRole,
 )
 
 router = routers.DefaultRouter()
@@ -34,8 +36,9 @@ router.register(r"UserDetails", UserdetailAPI)
 
 urlpatterns = [
     path("api/", include(router.urls)),
+    path("api/EstimatesByBusinessID/<int:businessid>/", EstimatesByBusinessID.as_view()),
+    path("api/EstimatesByUserID/<int:user_id>/", EstimatesByUser.as_view()),
+    path("api/EstimatesByClientID/<int:clientid>/", EstimatesByClient.as_view()),
+    path("api/UsersByRole/<int:user_id>/", UserListByRole.as_view()),
     path("api/UploadCode/", Base64CodeView.as_view()),
-    path("api/EstimatesByBusinessID/<int:businessid>/", SpecificBusinessAPI.as_view()),
-    path('api/UsersByRole/<int:user_id>/', UserDetailsView.as_view()),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
