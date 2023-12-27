@@ -78,17 +78,13 @@ class AdministratorAPI(ModelViewSet):
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
-            error_message = (
-                "An error occurred while fetching administrators: {}".format(str(e))
-            )
+            error_message = ("An error occurred while fetching administrators: {}".format(str(e)))
             error_response = {
                 "status": "error",
                 "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
                 "message": error_message,
             }
-            return Response(
-                error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def retrieve(self, request, *args, **kwargs):
         try:
@@ -1564,15 +1560,17 @@ class UserdetailAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-# API for Estimates by BusinessID
-class EstimatesByBusinessID(generics.ListAPIView):
-    serializer_class = EstimatedetailSerializer
+# API for Client List by BusinessID
+class GetClientByCB(generics.ListAPIView):
+    serializer_class = ClientdetailSerializer
 
     def get_queryset(self):
+        client_id = self.kwargs["clientid"]
         business_id = self.kwargs["businessid"]
-        return Estimatedetails.objects.filter(businessid=business_id)
+        return Clientdetails.objects.filter(clientid=client_id, businessid=business_id)
 
     def list(self, request, *args, **kwargs):
+        client_id = self.kwargs["clientid"]
         business_id = self.kwargs["businessid"]
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
@@ -1580,7 +1578,7 @@ class EstimatesByBusinessID(generics.ListAPIView):
             data = {
                 'status': 'success',
                 'code': status.HTTP_200_OK,
-                'message': f'Estimates for BusinessID: {business_id}',
+                'message': f'Client list under {business_id}',
                 'data': serializer.data
             }
             return Response(data, status=status.HTTP_200_OK)
@@ -1588,7 +1586,7 @@ class EstimatesByBusinessID(generics.ListAPIView):
             data = {
                 'status': 'failure',
                 'code': status.HTTP_404_NOT_FOUND,
-                'message': f'No estimates found for BusinessID: {business_id}',
+                'message': f'Client {client_id} not found',
                 'data': []
             }
             return Response(data, status=status.HTTP_404_NOT_FOUND)
@@ -1638,90 +1636,79 @@ class UserListByRole(generics.ListAPIView):
                 'message': 'An error occurred',
                 'data': str(e)
             })
-   
-# API for Estimates By USerID
-class EstimatesByUser(generics.ListAPIView):
-    serializer_class = EstimatedetailSerializer
-
-    def get(self, request, user_id=None, *args, **kwargs):
-        try:
-            # Fetch user details using user_id from Userdetails table
-            user = Userdetails.objects.get(userid=user_id)
-
-            if user.userrole == 'Admin':
-                # Fetch all estimates for Admin users based on businessid
-                queryset = Estimatedetails.objects.filter(businessid=user.businessid)
-            elif user.userrole == 'User':
-                # Fetch estimates for regular Users based on businessid and userid
-                # Check if the user_id exists under the provided businessid as a 'User'
-                user_exists = Userdetails.objects.filter(userid=user_id, businessid=user.businessid, userrole='User').exists()
-                if not user_exists:
-                    return Response({
-                        'status': 'error',
-                        'code': status.HTTP_404_NOT_FOUND,
-                        'message': f'User {user_id} not found under this role or business',
-                        'data': []
-                    })
-
-                queryset = Estimatedetails.objects.filter(businessid=user.businessid, userid=user_id)
-
-            # Serialize the queryset data
-            serializer = self.serializer_class(queryset, many=True)
-
-            # Prepare and return the response
-            return Response({
-                'status': 'success',
-                'code': status.HTTP_200_OK,
-                'message': f'All estimates for User: {user_id}',
-                'data': serializer.data
-            })
-
-        except Userdetails.DoesNotExist:
-            return Response({
-                'status': 'error',
-                'code': status.HTTP_404_NOT_FOUND,
-                'message': f'User {user_id} not found',
-                'data': []
-            })
-
-        except Exception as e:
-            # Handle any other unexpected errors
-            return Response({
-                'status': 'error',
-                'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-                'message': 'An error occurred',
-                'data': str(e)
-            })
     
 # API for Estimates by ClientID
-class EstimatesByClient(generics.ListAPIView):
+class GetEstimatesByUC(generics.ListAPIView):
     serializer_class = EstimatedetailSerializer
 
     def get_queryset(self):
-        client_id = self.kwargs.get("clientid")
-        queryset = Estimatedetails.objects.filter(clientid=client_id)
+        business_id = self.kwargs.get("businessid")
+        user_id = self.kwargs.get("userid")
+        queryset = Userdetails.objects.filter(businessid=business_id, userid=user_id)
         return queryset
 
-    def list(self, request, *args, **kwargs):
-        client_id = self.kwargs.get("clientid")
+    def get(self, request, *args, **kwargs):
+        business_id = self.kwargs.get("businessid")
+        user_id = self.kwargs.get("userid")
+
+        try:
+            user = Userdetails.objects.get(userid=user_id)
+
+            if user.userrole == "Admin":
+                queryset = Estimatedetails.objects.filter(businessid=user.businessid)
+            elif user.userrole == "User":
+                queryset = Estimatedetails.objects.filter(businessid=user.businessid, userid=user_id)
+            else:
+                return Response({'status': 'error', 'message': 'Invalid user role'}, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = self.get_serializer(queryset, many=True)
+            data = {
+                'status': 'success',
+                'code': status.HTTP_200_OK,
+                'message': f'Estimates for {business_id} by user {user_id}',
+                'data': serializer.data
+            }
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Userdetails.DoesNotExist:
+            return Response({'status': 'error', 'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        except Estimatedetails.DoesNotExist:
+            return Response({'status': 'error', 'message': 'Estimates not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+# API for User by deviceinfo and mobilenumber
+class GetUserByDeviceInfo(generics.ListAPIView):
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        mobile_no = self.kwargs.get("mobileno")
+        device_info = self.kwargs.get("deviceinfo")
+        queryset = Userdetails.objects.filter(mobileno=mobile_no, deviceinfo=device_info)
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        mobile_no = self.kwargs.get("mobileno")
+        device_info = self.kwargs.get("deviceinfo")
         queryset = self.get_queryset()
 
         serializer = self.get_serializer(queryset, many=True)
         if queryset.exists():
             data = {
-                'status': 'success',
-                'code': status.HTTP_200_OK,
-                'message': f'Estimates for ClientID: {client_id}',
-                'data': serializer.data
+                'status' : 'success',
+                'code' : status.HTTP_200_OK,
+                'messege' : f'Records under {mobile_no} and {device_info}',
+                'data' : serializer.data
             }
             return Response(data, status=status.HTTP_200_OK)
-
+        
         data = {
-            'status': 'failure',
-            'code': status.HTTP_404_NOT_FOUND,
-            'message': f'No estimates found for ClientID: {client_id}',
-            'data': []
+            'status' : 'error',
+            'code' : status.HTTP_404_NOT_FOUND,
+            'messege' : f'No records for {mobile_no} and {device_info}',
+            'data' : []
         }
         return Response(data, status=status.HTTP_404_NOT_FOUND)
-
 

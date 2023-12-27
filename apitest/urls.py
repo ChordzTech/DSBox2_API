@@ -10,10 +10,10 @@ from apitest.views import (
     BusinessesAPI,
     ClientDetailsAPI,
     DevelopersAPI,
-    EstimatesByBusinessID,
-    EstimatesByClient,
-    EstimatesByUser,
     EstimatedetailAPI,
+    GetClientByCB,
+    GetEstimatesByUC,
+    GetUserByDeviceInfo,
     PlydetailsAPI,
     SubscriptionDetailsAPI,
     TransactionAPI,
@@ -36,9 +36,9 @@ router.register(r"UserDetails", UserdetailAPI)
 
 urlpatterns = [
     path("api/", include(router.urls)),
-    path("api/EstimatesByBusinessID/<int:businessid>/", EstimatesByBusinessID.as_view()),
-    path("api/EstimatesByUserID/<int:user_id>/", EstimatesByUser.as_view()),
-    path("api/EstimatesByClientID/<int:clientid>/", EstimatesByClient.as_view()),
-    path("api/UsersByRole/<int:user_id>/", UserListByRole.as_view()),
+    path("api/GetClientByCB/<int:clientid>/<int:businessid>/", GetClientByCB.as_view()),
+    path("api/GetEstimatesByUC/<int:businessid>/<int:userid>/", GetEstimatesByUC.as_view()),
+    path("api/GetUserByDeviceInfo/<int:mobileno>/<str:deviceinfo>", GetUserByDeviceInfo.as_view()),
     path("api/UploadCode/", Base64CodeView.as_view()),
+    path("api/UsersByRole/<int:user_id>/", UserListByRole.as_view()),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

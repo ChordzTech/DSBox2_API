@@ -25,7 +25,7 @@ schema_view = get_schema_view(
     openapi.Info(
         title="DSBox API",
         default_version="v1",
-        description="API Testing",
+        description="",
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
