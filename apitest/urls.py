@@ -3,6 +3,7 @@ from rest_framework import routers
 from django.conf.urls.static import static
 from django.conf import settings
 from apitest.views import (
+    AdminHomeAPI,
     AdministratorAPI,
     AppconfigAPI,
     Base64CodeView,
@@ -12,13 +13,12 @@ from apitest.views import (
     DevelopersAPI,
     EstimatedetailAPI,
     GetClientByCB,
-    GetEstimatesByUC,
-    GetUserByDeviceInfo,
+    GetEstimatesByUB,
+    GetUserDetails,
     PlydetailsAPI,
     SubscriptionDetailsAPI,
     TransactionAPI,
     UserdetailAPI,
-    UserListByRole,
 )
 
 router = routers.DefaultRouter()
@@ -31,14 +31,17 @@ router.register(r"Developers", DevelopersAPI)
 router.register(r"EstimateDetails", EstimatedetailAPI)
 router.register(r"PlyDetails", PlydetailsAPI)
 router.register(r"SubscriptionsDetails", SubscriptionDetailsAPI)
-router.register(r"TransactionDetails", TransactionAPI)
+# router.register(r"TransactionDetails", TransactionAPI)
 router.register(r"UserDetails", UserdetailAPI)
 
 urlpatterns = [
     path("api/", include(router.urls)),
+    path('api/AdminHome/', AdminHomeAPI.as_view()),
     path("api/GetClientByCB/<int:clientid>/<int:businessid>/", GetClientByCB.as_view()),
-    path("api/GetEstimatesByUC/<int:businessid>/<int:userid>/", GetEstimatesByUC.as_view()),
-    path("api/GetUserByDeviceInfo/<int:mobileno>/<str:deviceinfo>", GetUserByDeviceInfo.as_view()),
+    path("api/GetEstimatesByUC/<int:businessid>/<int:userid>/", GetEstimatesByUB.as_view()),
+    path("api/GetUserDetails/<int:mobileno>/<str:deviceinfo>", GetUserDetails.as_view()),
+    path('api/TransactionDetails/', TransactionAPI.as_view({'get': 'list','post': 'create'})),
+    path('api/TransactionDetails/<int:businessid>/<int:pk>/', TransactionAPI.as_view({'get': 'retrieve','get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})),
     path("api/UploadCode/", Base64CodeView.as_view()),
-    path("api/UsersByRole/<int:user_id>/", UserListByRole.as_view()),
+    path("api/UploadCode/", Base64CodeView.as_view()),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

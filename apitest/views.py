@@ -1,11 +1,16 @@
 import os
+from datetime import datetime, timedelta
+from django.db.models import Count
+from django.db import connection
+from django.conf import settings
+from django.db.models import Q
+from django.contrib.auth.hashers import make_password
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from django.conf import settings
-from django.contrib.auth.hashers import make_password
+from urllib.parse import unquote
 from .models import (
     Administrators,
     Appconfig,
@@ -54,12 +59,39 @@ class Base64CodeView(APIView):
                 code_file.write(base64_code)
 
             response_data = {
+                "status" : "sucess",
+                "code" : status.HTTP_200_OK,
                 "message": "Base64 code stored successfully",
             }
 
             return Response(response_data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get(self, request, *args, **kwargs):
+        file_name = "Image_Code.txt"
+        code_file_path = os.path.join(settings.MEDIA_ROOT, file_name)
+
+        try:
+            with open(code_file_path, "r") as code_file:
+                base64_code = code_file.read()
+
+            response_data = {
+                "status" : "success",
+                "code" : status.HTTP_200_OK,
+                "base64_code": base64_code,
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except FileNotFoundError:
+            error_data = {
+                "status" : "error",
+                "code" : status.HTTP_404_NOT_FOUND,
+                "message": "File not found",
+            }
+
+            return Response(error_data, status=status.HTTP_404_NOT_FOUND)
 
 # API for Administrator
 class AdministratorAPI(ModelViewSet):
@@ -191,10 +223,10 @@ class AdministratorAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Administrator deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete administrator: {}".format(str(e))
             error_response = {
@@ -324,10 +356,10 @@ class AppconfigAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Appconfig deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete appconfig: {}".format(str(e))
             error_response = {
@@ -459,10 +491,10 @@ class BusinessDetailsAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Business details deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete business details: {}".format(str(e))
             error_response = {
@@ -592,10 +624,10 @@ class BusinessesAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Business deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete business: {}".format(str(e))
             error_response = {
@@ -725,10 +757,10 @@ class ClientDetailsAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Client deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete client: {}".format(str(e))
             error_response = {
@@ -870,10 +902,10 @@ class DevelopersAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Developer deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete developer: {}".format(str(e))
             error_response = {
@@ -1003,10 +1035,10 @@ class EstimatedetailAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Estimate deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete estimate: {}".format(str(e))
             error_response = {
@@ -1136,10 +1168,10 @@ class PlydetailsAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Ply deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete ply: {}".format(str(e))
             error_response = {
@@ -1269,10 +1301,10 @@ class SubscriptionDetailsAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Subscription deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete subscription: {}".format(str(e))
             error_response = {
@@ -1311,7 +1343,7 @@ class TransactionAPI(ModelViewSet):
                 error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request, businessid, pk, *args, **kwargs):
         try:
             instance = self.get_object()
             serializer = self.get_serializer(instance)
@@ -1352,7 +1384,7 @@ class TransactionAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request, businessid, pk, *args, **kwargs):
         try:
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
@@ -1374,7 +1406,7 @@ class TransactionAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(self, request, businessid, pk, *args, **kwargs):
         try:
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
@@ -1396,16 +1428,16 @@ class TransactionAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, businessid, pk, *args, **kwargs):
         try:
             instance = self.get_object()
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "Transaction deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete transaction: {}".format(str(e))
             error_response = {
@@ -1547,10 +1579,10 @@ class UserdetailAPI(ModelViewSet):
             instance.delete()
             api_response = {
                 "status": "success",
-                "code": status.HTTP_204_NO_CONTENT,
+                "code": status.HTTP_200_OK,
                 "message": "User deleted successfully",
             }
-            return Response(api_response, status=status.HTTP_204_NO_CONTENT)
+            return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = "Failed to delete user: {}".format(str(e))
             error_response = {
@@ -1560,7 +1592,7 @@ class UserdetailAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
-# API for Client List by BusinessID
+# API for Client List by ClientID, BusinessID
 class GetClientByCB(generics.ListAPIView):
     serializer_class = ClientdetailSerializer
 
@@ -1591,54 +1623,8 @@ class GetClientByCB(generics.ListAPIView):
             }
             return Response(data, status=status.HTTP_404_NOT_FOUND)
     
-# API for Userlist by Role
-class UserListByRole(generics.ListAPIView):
-    serializer_class = UserSerializer
-
-    def get(self, request, user_id=None, *args, **kwargs):
-        try:
-            # Fetch user details using user_id
-            user = Userdetails.objects.get(userid=user_id)
-
-            # Extract androidid and mobileno from the fetched user
-            androidid = user.androidid
-            mobileno = user.mobileno
-
-            if user.userrole == 'Admin':
-                queryset = Userdetails.objects.filter(businessid=user.businessid)
-                serializer = self.serializer_class(queryset, many=True)
-                return Response({
-                    'status': 'success',
-                    'code': status.HTTP_200_OK,
-                    'message': f'All records for UserID: {user_id}',
-                    'data': serializer.data
-                })
-            elif user.userrole == 'User':
-                queryset = Userdetails.objects.filter(businessid=user.businessid, userid=user_id)
-                serializer = self.serializer_class(queryset, many=True)
-                return Response({
-                    'status': 'success',
-                    'code': status.HTTP_200_OK,
-                    'message':  f'All records for UserID: {user_id}',
-                    'data': serializer.data
-                })
-        except Userdetails.DoesNotExist:
-            return Response({
-                'status': 'error',
-                'code': status.HTTP_404_NOT_FOUND,
-                'message': f'User with ID {user_id} not found',
-                'data': []
-            })
-        except Exception as e:
-            return Response({
-                'status': 'error',
-                'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-                'message': 'An error occurred',
-                'data': str(e)
-            })
-    
-# API for Estimates by ClientID
-class GetEstimatesByUC(generics.ListAPIView):
+# API for Estimates by UserID and BusinessID
+class GetEstimatesByUB(generics.ListAPIView):
     serializer_class = EstimatedetailSerializer
 
     def get_queryset(self):
@@ -1680,35 +1666,114 @@ class GetEstimatesByUC(generics.ListAPIView):
             return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 # API for User by deviceinfo and mobilenumber
-class GetUserByDeviceInfo(generics.ListAPIView):
+class GetUserDetails(generics.ListAPIView):
     serializer_class = UserSerializer
 
     def get_queryset(self):
         mobile_no = self.kwargs.get("mobileno")
         device_info = self.kwargs.get("deviceinfo")
-        queryset = Userdetails.objects.filter(mobileno=mobile_no, deviceinfo=device_info)
+        
+        # Decode URL-encoded parameters to handle spaces properly
+        device_info = unquote(device_info)
+        
+        # Remove leading and trailing spaces from the device_info value
+        device_info = device_info.strip()
+
+        # Split the device_info string by spaces and create a query for each word
+        device_info_query = Q()
+        for word in device_info.split():
+            device_info_query &= Q(deviceinfo__icontains=word)
+
+        queryset = Userdetails.objects.filter(mobileno=mobile_no).filter(device_info_query)
         return queryset
 
     def get(self, request, *args, **kwargs):
         mobile_no = self.kwargs.get("mobileno")
         device_info = self.kwargs.get("deviceinfo")
+        
+        # Decode URL-encoded parameters for response message
+        trimmed_device_info = unquote(device_info).strip()
+
         queryset = self.get_queryset()
 
         serializer = self.get_serializer(queryset, many=True)
         if queryset.exists():
             data = {
-                'status' : 'success',
-                'code' : status.HTTP_200_OK,
-                'messege' : f'Records under {mobile_no} and {device_info}',
-                'data' : serializer.data
+                'status': 'success',
+                'code': status.HTTP_200_OK,
+                'message': f'Record under {mobile_no} and {trimmed_device_info}',
+                'data': serializer.data
             }
             return Response(data, status=status.HTTP_200_OK)
-        
+
         data = {
-            'status' : 'error',
-            'code' : status.HTTP_404_NOT_FOUND,
-            'messege' : f'No records for {mobile_no} and {device_info}',
-            'data' : []
+            'status': 'error',
+            'code': status.HTTP_404_NOT_FOUND,
+            'message': f'No record for {mobile_no} and {trimmed_device_info}',
+            'data': []
         }
         return Response(data, status=status.HTTP_404_NOT_FOUND)
 
+# API for Admin home page
+class AdminHomeAPI(generics.GenericAPIView):
+    serializer_class = BusinessdetailSerializer  # Replace with your serializer
+
+    def get_serializer(self, *args, **kwargs):
+        return None  # Override get_serializer method to return None
+
+    def get(self, request, *args, **kwargs):
+        try:
+            total_count = Businessdetails.objects.count()
+            active_count = Businessdetails.objects.filter(status="Active").count()
+            trial_count = Businessdetails.objects.filter(status="Trial").count()
+
+            today = datetime.now().date()
+            current_week_start = today - timedelta(days=today.weekday())
+            current_week_end = current_week_start + timedelta(days=6)
+            past_week_start = current_week_start - timedelta(days=7)
+            past_week_end = current_week_start - timedelta(days=1)
+
+            current_week_records = self.get_queryset().filter(activationdate__range=(current_week_start, current_week_end))
+            past_week_records = self.get_queryset().filter(activationdate__range=(past_week_start, past_week_end))
+
+            current_week_data = self.get_records_per_day(current_week_records, current_week_start, current_week_end)
+            past_week_data = self.get_records_per_day(past_week_records, past_week_start, past_week_end)
+
+            response_data = {
+                'status': 'success',
+                'code': status.HTTP_200_OK,
+                'message': 'All businesses information',
+                'data': {
+                    'Total Business': total_count,
+                    'Active Business': active_count,
+                    'Trial Business': trial_count,
+                    'Current Week Records': current_week_data,
+                    'Past Week Records': past_week_data,
+                }
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print("Exception occurred:", e)
+            error_message = "Failed to retrieve business details."
+            response_data = {
+                'status': 'error',
+                'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
+                'message': error_message,
+                'data': None
+            }
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get_queryset(self):
+        return Businessdetails.objects.all()
+
+    def get_records_per_day(self, queryset, start_date, end_date):
+        date_records = {}
+        current_date = start_date
+        while current_date <= end_date:
+            day_name = current_date.strftime('%A')  # Get the day name from the date
+            count = queryset.filter(activationdate=current_date).count()
+            date_records[day_name] = count
+            current_date += timedelta(days=1)
+        return date_records
