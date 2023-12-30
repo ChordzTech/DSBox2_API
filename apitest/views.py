@@ -1,7 +1,5 @@
 import os
 from datetime import datetime, timedelta
-from django.db.models import Count
-from django.db import connection
 from django.conf import settings
 from django.db.models import Q
 from django.contrib.auth.hashers import make_password
@@ -1715,8 +1713,8 @@ class GetUserDetails(generics.ListAPIView):
         return Response(data, status=status.HTTP_404_NOT_FOUND)
 
 # API for Admin home page
-class AdminHomeAPI(generics.GenericAPIView):
-    serializer_class = BusinessdetailSerializer  # Replace with your serializer
+class AdminHomeAPI(generics.ListAPIView):
+    serializer_class = BusinessdetailSerializer  
 
     def get_serializer(self, *args, **kwargs):
         return None  # Override get_serializer method to return None
@@ -1744,11 +1742,11 @@ class AdminHomeAPI(generics.GenericAPIView):
                 'code': status.HTTP_200_OK,
                 'message': 'All businesses information',
                 'data': {
-                    'Total Business': total_count,
-                    'Active Business': active_count,
-                    'Trial Business': trial_count,
-                    'Current Week Records': current_week_data,
-                    'Past Week Records': past_week_data,
+                    'totalBusiness': total_count,
+                    'activeBusiness': active_count,
+                    'trialBusiness': trial_count,
+                    'currentWeekRecords': current_week_data,
+                    'pastWeekRecords': past_week_data,
                 }
             }
 
@@ -1772,8 +1770,37 @@ class AdminHomeAPI(generics.GenericAPIView):
         date_records = {}
         current_date = start_date
         while current_date <= end_date:
-            day_name = current_date.strftime('%A')  # Get the day name from the date
+            day_name = current_date.strftime('%A').lower()  # Get the day name from the date
             count = queryset.filter(activationdate=current_date).count()
             date_records[day_name] = count
             current_date += timedelta(days=1)
         return date_records
+
+# API based on subscription for Admin
+class AdminHomeAPI2(generics.ListAPIView):
+    serializer_class = BusinessdetailSerializer  
+
+    def get_queryset(self):
+        return Businessdetails.objects.order_by('-subscriptiondate') # for descending order
+        # return Businessdetails.objects.order_by('subscriptiondate') # for ascending order
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.get_queryset()
+            serializer = self.serializer_class(queryset, many=True)
+            response_data = {
+                'status' : 'success',
+                'code' : status.HTTP_200_OK,
+                'messege' : 'Business Details based on subscription date',
+                'data' : serializer.data
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            error_message = "Failed to retrieve business details."
+            response_data = {
+                'status': 'error',
+                'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
+                'message': error_message,
+                'data': None
+            }
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

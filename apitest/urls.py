@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 from django.conf import settings
 from apitest.views import (
     AdminHomeAPI,
+    AdminHomeAPI2,
     AdministratorAPI,
     AppconfigAPI,
     Base64CodeView,
@@ -31,17 +32,28 @@ router.register(r"Developers", DevelopersAPI)
 router.register(r"EstimateDetails", EstimatedetailAPI)
 router.register(r"PlyDetails", PlydetailsAPI)
 router.register(r"SubscriptionsDetails", SubscriptionDetailsAPI)
-# router.register(r"TransactionDetails", TransactionAPI)
 router.register(r"UserDetails", UserdetailAPI)
 
 urlpatterns = [
     path("api/", include(router.urls)),
-    path('api/AdminHome/', AdminHomeAPI.as_view()),
+    path("api/AdminHome/", AdminHomeAPI.as_view()),
+    path("api/AdminHome2/", AdminHomeAPI2.as_view()),
     path("api/GetClientByCB/<int:clientid>/<int:businessid>/", GetClientByCB.as_view()),
-    path("api/GetEstimatesByUC/<int:businessid>/<int:userid>/", GetEstimatesByUB.as_view()),
+    path("api/GetEstimatesByUC/<int:businessid>/<int:userid>/",GetEstimatesByUB.as_view()),
     path("api/GetUserDetails/<int:mobileno>/<str:deviceinfo>", GetUserDetails.as_view()),
-    path('api/TransactionDetails/', TransactionAPI.as_view({'get': 'list','post': 'create'})),
-    path('api/TransactionDetails/<int:businessid>/<int:pk>/', TransactionAPI.as_view({'get': 'retrieve','get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})),
+    path("api/TransactionDetails/",
+        TransactionAPI.as_view({"get": "list", "post": "create"}),
+    ),
+    path("api/TransactionDetails/<int:businessid>/<int:pk>/",
+        TransactionAPI.as_view(
+            {
+                "get": "retrieve",
+                "get": "retrieve",
+                "put": "update",
+                "patch": "partial_update",
+                "delete": "destroy",
+            }),
+    ),
     path("api/UploadCode/", Base64CodeView.as_view()),
     path("api/UploadCode/", Base64CodeView.as_view()),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

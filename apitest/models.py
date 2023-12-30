@@ -14,6 +14,7 @@ class Administrators(models.Model):
     adminpassword = models.TextField(
         db_column="AdminPassword"
     )  # Field name made lowercase.
+    adminemail = models.CharField(max_length=50, blank=True, null=True)
     firebaseid = models.TextField(db_column="FirebaseID")  # Field name made lowercase.
     fcmtoken = models.TextField(db_column="FCMToken")  # Field name made lowercase.
     deviceinfo = models.TextField(db_column="DeviceInfo")  # Field name made lowercase.
