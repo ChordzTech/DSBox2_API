@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timedelta
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.contrib.auth.hashers import make_password
 from rest_framework.views import APIView
 from rest_framework import status
@@ -418,9 +418,19 @@ class BusinessDetailsAPI(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            last_business = Businessdetails.objects.aggregate(Max('businessid'))
+            last_business_id = last_business['businessid__max']
+            print(last_business_id)
+            # If the table is empty, set the initial businessid to 1
+            if last_business_id is None:
+                new_business_id = 1
+            else:
+                new_business_id = last_business_id + 1
+
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            serializer.save(businessid=new_business_id)  # Assuming 'businessid' is a field in your serializer
+            print(new_business_id)
             api_response = {
                 "status": "success",
                 "code": status.HTTP_201_CREATED,
@@ -1496,13 +1506,32 @@ class UserdetailAPI(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            business_id = request.data.get("businessid")
+
+            # Fetch users under the given business ID
+            existing_users = Userdetails.objects.filter(businessid=business_id)
+
+            # Get the maximum user ID among existing users (if any)
+            max_user_id = existing_users.aggregate(Max('userid'))['userid__max']
+
+            if max_user_id is None:
+                # No existing users for this business ID
+                # Setting the initial user ID format if no users exist
+                new_user_id = int(f"{business_id}01")
+            else:
+                # Increment the user ID based on the maximum user ID for this business ID
+                new_user_id = max_user_id + 1
+
             userpassword = request.data.get("userpassword")
             hashpassword = make_password(userpassword)
             request.data["userpassword"] = hashpassword
-            # print(check_password('Actual Password', 'encrypted password'))
+            request.data["businessid"] = business_id
+            request.data["userid"] = new_user_id
+
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_201_CREATED,
@@ -1591,16 +1620,19 @@ class UserdetailAPI(ModelViewSet):
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
 # API for Client List by ClientID, BusinessID
-class GetClientByCB(generics.ListAPIView):
+class GetClientByB(generics.ListAPIView):
     serializer_class = ClientdetailSerializer
 
     def get_queryset(self):
-        client_id = self.kwargs["clientid"]
+        # client_id = self.kwargs["clientid"]
+        # user_id = self.kwargs["userid"]
         business_id = self.kwargs["businessid"]
-        return Clientdetails.objects.filter(clientid=client_id, businessid=business_id)
+        # return Clientdetails.objects.filter(clientid=client_id, userid=user_id)
+        return Clientdetails.objects.filter(businessid=business_id)
 
     def list(self, request, *args, **kwargs):
-        client_id = self.kwargs["clientid"]
+        # client_id = self.kwargs["clientid"]
+        # user_id = self.kwargs["user_id"]
         business_id = self.kwargs["businessid"]
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
@@ -1616,7 +1648,7 @@ class GetClientByCB(generics.ListAPIView):
             data = {
                 'status': 'failure',
                 'code': status.HTTP_404_NOT_FOUND,
-                'message': f'Client {client_id} not found',
+                'message': f'Client not found',
                 'data': []
             }
             return Response(data, status=status.HTTP_404_NOT_FOUND)
@@ -1804,3 +1836,4 @@ class AdminHomeAPI2(generics.ListAPIView):
                 'data': None
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

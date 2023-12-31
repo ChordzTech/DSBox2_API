@@ -228,6 +228,24 @@ class Estimatedetails(models.Model):
     height_mm_field = models.FloatField(
         db_column="Height(mm)"
     )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
+    length_cm_field = models.FloatField(
+        db_column="Length(cm)", blank=True, null=True
+    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
+    width_cm_field = models.FloatField(
+        db_column="Width(cm)", blank=True, null=True
+    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
+    height_cm_field = models.FloatField(
+        db_column="Height(cm)", blank=True, null=True
+    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
+    length_inch_field = models.FloatField(
+        db_column="Length(inch)", blank=True, null=True
+    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
+    width_inch_field = models.FloatField(
+        db_column="Width(inch)", blank=True, null=True
+    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
+    height_inch_field = models.FloatField(
+        db_column="Height(inch)", blank=True, null=True
+    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
     ply = models.FloatField(db_column="Ply")  # Field name made lowercase.
     ups = models.FloatField(db_column="Ups")  # Field name made lowercase.
     cuttinglengthmargin = models.FloatField(
@@ -293,25 +311,7 @@ class Estimatedetails(models.Model):
     comment = models.CharField(
         db_column="Comment", blank=True, max_length=100, null=True
     )  # Field name made lowercase.
-    length_cm_field = models.FloatField(
-        db_column="Length(cm)", blank=True, null=True
-    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
-    width_cm_field = models.FloatField(
-        db_column="Width(cm)", blank=True, null=True
-    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
-    height_cm_field = models.FloatField(
-        db_column="Height(cm)", blank=True, null=True
-    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
-    length_inch_field = models.FloatField(
-        db_column="Length(inch)", blank=True, null=True
-    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
-    width_inch_field = models.FloatField(
-        db_column="Width(inch)", blank=True, null=True
-    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
-    height_inch_field = models.FloatField(
-        db_column="Height(inch)", blank=True, null=True
-    )  # Field name made lowercase. Field renamed to remove unsuitable characters. Field renamed because it ended with '_'.
-
+    
     class Meta:
         db_table = "estimatedetails"
 
