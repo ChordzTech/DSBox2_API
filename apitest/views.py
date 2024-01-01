@@ -420,7 +420,7 @@ class BusinessDetailsAPI(ModelViewSet):
         try:
             last_business = Businessdetails.objects.aggregate(Max('businessid'))
             last_business_id = last_business['businessid__max']
-            print(last_business_id)
+            
             # If the table is empty, set the initial businessid to 1
             if last_business_id is None:
                 new_business_id = 1
@@ -696,9 +696,20 @@ class ClientDetailsAPI(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            business_id = request.data.get("businessid")
+
+            existing_clients = Clientdetails.objects.filter(businessid=business_id)
+            max_client_id = existing_clients.aggregate(Max('clientid'))['clientid__max']
+
+            if max_client_id is None:
+                new_client_id = int(f"{business_id}00001")
+            else:
+                new_client_id = max_client_id + 1
+
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            serializer.save(clientid=new_client_id)
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_201_CREATED,
@@ -713,7 +724,7 @@ class ClientDetailsAPI(ModelViewSet):
                 "code": status.HTTP_400_BAD_REQUEST,
                 "message": error_message,
             }
-            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+        return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         try:
@@ -974,9 +985,22 @@ class EstimatedetailAPI(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            business_id = request.data.get("businessid")
+            user_id = request.data.get("userid")
+            client_id = request.data.get("clientid")
+
+            existing_estimates = Estimatedetails.objects.filter(businessid=business_id, userid=user_id, clientid=client_id)
+            max_estimate_id = existing_estimates.aggregate(Max('estimateid'))['estimateid__max']
+
+            if max_estimate_id is None:
+                new_estimate_id = int(f"{business_id}00001")
+            else:
+                new_estimate_id = max_estimate_id + 1
+
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            serializer.save(estimateid=new_estimate_id)
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_201_CREATED,
@@ -1373,13 +1397,31 @@ class TransactionAPI(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            last_transaction = Transactiondetails.objects.aggregate(Max('transactionid'))
+            last_transaction_id = last_transaction['transactionid__max']
+
+            if last_transaction_id is None:
+                new_transaction_id = 1
+            else:
+                new_transaction_id = last_transaction_id + 1
+
+            request.data['transactionid'] = new_transaction_id  # Assuming 'transactionid' needs to be provided in the request data
+
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            transaction_instance = serializer.save()  # Save transaction and get the instance
+
+            business_id = transaction_instance.businessid  # Assuming 'businessid' is a field in Transactiondetails
+            business_details = Businessdetails.objects.get(businessid=business_id)
+
+            # Assuming 'transactiondate' and 'subscriptiondate' are fields in respective models
+            business_details.subscriptiondate = transaction_instance.transactiondate
+            business_details.save()
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_201_CREATED,
-                "message": "Transaction added successfully",
+                "message": "Transaction added successfully.",
                 "data": serializer.data,
             }
             return Response(api_response, status=status.HTTP_201_CREATED)
@@ -1507,28 +1549,45 @@ class UserdetailAPI(ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             business_id = request.data.get("businessid")
+            # userpassword = request.data.get("userpassword")
 
-            # Fetch users under the given business ID
             existing_users = Userdetails.objects.filter(businessid=business_id)
-
-            # Get the maximum user ID among existing users (if any)
             max_user_id = existing_users.aggregate(Max('userid'))['userid__max']
 
             if max_user_id is None:
-                # No existing users for this business ID
-                # Setting the initial user ID format if no users exist
                 new_user_id = int(f"{business_id}01")
             else:
-                # Increment the user ID based on the maximum user ID for this business ID
                 new_user_id = max_user_id + 1
 
-            userpassword = request.data.get("userpassword")
-            hashpassword = make_password(userpassword)
-            request.data["userpassword"] = hashpassword
-            request.data["businessid"] = business_id
-            request.data["userid"] = new_user_id
+            business = Businessdetails.objects.get(businessid=business_id)
 
-            serializer = self.get_serializer(data=request.data)
+            # Extracting the last two digits of the user ID
+            last_two_digits = int(str(new_user_id)[-2:])
+
+            if last_two_digits == 1:
+                # Fetching username and mobileno from Businessdetails
+                username = business.businessname
+                mobileno = business.contactno
+                userrole = 'Admin'
+            else:
+                # Set default values for username, mobileno, and userrole
+                username = 'username'
+                mobileno = 'contactno'
+                userrole = 'User'
+
+            # Creating user data including required fields
+            user_data = {
+                'userid': new_user_id,
+                'businessid': business_id,
+                'userpassword': 'dsbox@123',
+                'username': username,
+                'mobileno': mobileno,
+                'userrole': userrole,
+                'useraccess': 2,
+                'status': 'Active'
+            }
+
+            serializer = self.get_serializer(data=user_data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
@@ -1546,7 +1605,8 @@ class UserdetailAPI(ModelViewSet):
                 "code": status.HTTP_400_BAD_REQUEST,
                 "message": error_message,
             }
-            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+        return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
 
     def update(self, request, *args, **kwargs):
         try:
