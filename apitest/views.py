@@ -1930,8 +1930,6 @@ class AdminLoginAPI(generics.ListAPIView):
                     else:
                         return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
             except Administrators.DoesNotExist:
-                pass  # Fall through to return invalid user
-
-            return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response({'message': 'Please provide both adminname and adminpassword'}, status=status.HTTP_400_BAD_REQUEST)
