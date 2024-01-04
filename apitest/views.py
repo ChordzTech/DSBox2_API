@@ -1917,15 +1917,21 @@ class AdminLoginAPI(generics.ListAPIView):
     def get(self, request, adminname, adminpassword, *args, **kwargs):
         if adminname and adminpassword:
             try:
-                admin = Administrators.objects.get(adminname=adminname)
-                stored_password = admin.adminpassword
+                # Perform a case-sensitive check in Python after retrieving the user
+                admin = Administrators.objects.get(adminname__iexact=adminname)
                 
-                # Check if the provided password matches the stored encrypted password
-                if check_password(adminpassword, stored_password):
-                    return Response({'message': 'Valid User'}, status=status.HTTP_200_OK)
-                else:
-                    return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
+                # Ensure case sensitivity using Python check
+                if admin.adminname == adminname:
+                    stored_password = admin.adminpassword
+
+                    # Check if the provided password matches the stored encrypted password
+                    if check_password(adminpassword, stored_password):
+                        return Response({'message': 'Valid User'}, status=status.HTTP_200_OK)
+                    else:
+                        return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
             except Administrators.DoesNotExist:
-                return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
+                pass  # Fall through to return invalid user
+
+            return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response({'message': 'Please provide both adminname and adminpassword'}, status=status.HTTP_400_BAD_REQUEST)
