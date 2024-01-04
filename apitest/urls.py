@@ -5,6 +5,7 @@ from django.conf import settings
 from apitest.views import (
     AdminHomeAPI,
     AdminHomeAPI2,
+    AdminLoginAPI,
     AdministratorAPI,
     AppconfigAPI,
     Base64CodeView,
@@ -38,6 +39,7 @@ urlpatterns = [
     path("api/", include(router.urls)),
     path("api/AdminHome/", AdminHomeAPI.as_view()),
     path("api/AdminHome2/", AdminHomeAPI2.as_view()),
+    path("api/AdminLogin/<str:adminname>/<str:adminpassword>/", AdminLoginAPI.as_view()), 
     path("api/GetClientByB/<int:businessid>/", GetClientByB.as_view()),
     path("api/GetEstimatesByUB/<int:businessid>/<int:userid>/",GetEstimatesByUB.as_view()),
     path("api/GetUserDetails/<int:mobileno>/<str:deviceinfo>/", GetUserDetails.as_view()),

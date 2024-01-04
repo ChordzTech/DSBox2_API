@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.db.models import Q, Max
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework import generics
@@ -418,19 +418,29 @@ class BusinessDetailsAPI(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            contact_no = request.data.get('contactno')
+            # Check if contactno already exists in Businessdetails
+            existing_business = Businessdetails.objects.filter(contactno=contact_no).exists()
+            if existing_business:
+                error_response = {
+                    "status": "error",
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": f"Business with contactno {contact_no} already exists",
+                }
+                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
             last_business = Businessdetails.objects.aggregate(Max('businessid'))
             last_business_id = last_business['businessid__max']
-            
+
             # If the table is empty, set the initial businessid to 1
             if last_business_id is None:
-                new_business_id = 1
+                new_business_id = 1000000
             else:
                 new_business_id = last_business_id + 1
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save(businessid=new_business_id)  # Assuming 'businessid' is a field in your serializer
-            print(new_business_id)
             api_response = {
                 "status": "success",
                 "code": status.HTTP_201_CREATED,
@@ -446,6 +456,7 @@ class BusinessDetailsAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
 
     def update(self, request, *args, **kwargs):
         try:
@@ -1550,6 +1561,7 @@ class UserdetailAPI(ModelViewSet):
         try:
             business_id = request.data.get("businessid")
             # userpassword = request.data.get("userpassword")
+            # Assuming other fields such as androidid, deviceinfo are obtained similarly
 
             existing_users = Userdetails.objects.filter(businessid=business_id)
             max_user_id = existing_users.aggregate(Max('userid'))['userid__max']
@@ -1561,29 +1573,28 @@ class UserdetailAPI(ModelViewSet):
 
             business = Businessdetails.objects.get(businessid=business_id)
 
-            # Extracting the last two digits of the user ID
             last_two_digits = int(str(new_user_id)[-2:])
 
             if last_two_digits == 1:
-                # Fetching username and mobileno from Businessdetails
                 username = business.businessname
                 mobileno = business.contactno
                 userrole = 'Admin'
             else:
-                # Set default values for username, mobileno, and userrole
-                username = 'username'
-                mobileno = 'contactno'
+                # Retrieve username, mobileno, and other required fields from the request
+                username = request.data.get("username")
+                mobileno = request.data.get("mobileno")
                 userrole = 'User'
 
-            # Creating user data including required fields
             user_data = {
                 'userid': new_user_id,
                 'businessid': business_id,
-                'userpassword': 'dsbox@123',
-                'username': username,
-                'mobileno': mobileno,
+                'userpassword': 'dsbox@123',  # Use the provided userpassword
+                'username': username,  # Use the determined username
+                'mobileno': mobileno,  # Use the determined mobileno
                 'userrole': userrole,
                 'useraccess': 2,
+                'androidid': request.data.get("androidid"),  # Get androidid from request
+                'deviceinfo': request.data.get("deviceinfo"),  # Get deviceinfo from request
                 'status': 'Active'
             }
 
@@ -1605,7 +1616,8 @@ class UserdetailAPI(ModelViewSet):
                 "code": status.HTTP_400_BAD_REQUEST,
                 "message": error_message,
             }
-        return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
 
 
     def update(self, request, *args, **kwargs):
@@ -1896,4 +1908,24 @@ class AdminHomeAPI2(generics.ListAPIView):
                 'data': None
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+# API for Admin login
+class AdminLoginAPI(generics.ListAPIView):
+    queryset = Administrators.objects.all()
+    serializer_class = AdministratorsSerializer
 
+    def get(self, request, adminname, adminpassword, *args, **kwargs):
+        if adminname and adminpassword:
+            try:
+                admin = Administrators.objects.get(adminname=adminname)
+                stored_password = admin.adminpassword
+                
+                # Check if the provided password matches the stored encrypted password
+                if check_password(adminpassword, stored_password):
+                    return Response({'message': 'Valid User'}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
+            except Administrators.DoesNotExist:
+                return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response({'message': 'Please provide both adminname and adminpassword'}, status=status.HTTP_400_BAD_REQUEST)
