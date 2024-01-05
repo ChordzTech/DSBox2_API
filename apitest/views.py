@@ -1933,3 +1933,64 @@ class AdminLoginAPI(generics.ListAPIView):
                 return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response({'message': 'Please provide both adminname and adminpassword'}, status=status.HTTP_400_BAD_REQUEST)
+        
+# API for subscriptions which are ending soon
+class SubscriptionEndingSoon(generics.ListAPIView):
+    serializer_class = TransactionSerializer
+    
+    def get(self, request):
+        try:
+            # Get current date
+            current_date = datetime.now().date()
+
+            # Retrieve transactions
+            transactions = Transactiondetails.objects.all()
+
+            # Collect transactions ending soon
+            ending_soon = []
+            for transaction in transactions:
+                # Calculate the end date by adding duration days to the transaction date
+                end_date = transaction.transactiondate + timedelta(days=transaction.duration)
+                
+                # Calculate remaining days by subtracting current date from the end date
+                remaining_days = (end_date - current_date).days
+                
+                # Check if remaining days are within the range of 1 to 7
+                if 1 <= remaining_days <= 7:
+                    # Retrieve business details related to this transaction
+                    business_records = Businessdetails.objects.filter(businessid=transaction.businessid)
+                    for record in business_records:
+                        ending_soon.append({
+                            'business_id': record.businessid,
+                            'business_name': record.businessname,
+                            'contact_no': record.contactno,
+                            'email': record.email,
+                            'subscription_date': record.subscriptiondate,
+                            'remaining_days' : remaining_days,
+                            # Include other necessary fields from Businessdetails
+                            # Add more fields as required
+                        })
+
+            if ending_soon:
+                return Response({
+                    'status': 'success',
+                    'code': 200,
+                    'message': 'Subscriptions ending soon',
+                    'data': ending_soon
+                })
+            else:
+                return Response({
+                    'status': 'fail',
+                    'code': 404,
+                    'message': 'No businesses which are expiring soon',
+                    'data': []
+                })
+
+        except Exception as e:
+            # Handle other potential exceptions
+            return Response({
+                'status': 'error',
+                'code': 500,
+                'message': 'An error occurred',
+                'data': str(e)
+            })
