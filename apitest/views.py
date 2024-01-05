@@ -1766,7 +1766,36 @@ class GetEstimatesByUB(generics.ListAPIView):
 
         except Exception as e:
             return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
+# API for Estimates by ClientID
+class GetEstimatesByClient(generics.ListAPIView):
+    serializer_class = EstimatedetailSerializer
+
+    def get_queryset(self):
+        client_id = self.kwargs["clientid"]
+        return Estimatedetails.objects.filter(clientid=client_id)
+
+    def list(self, request, *args, **kwargs):
+        client_id = self.kwargs["clientid"]
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        if queryset.exists():
+            data = {
+                'status': 'success',
+                'code': status.HTTP_200_OK,
+                'message': f'Estimates for ClientID: {client_id}',
+                'data': serializer.data
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        else:
+            data = {
+                'status': 'failure',
+                'code': status.HTTP_404_NOT_FOUND,
+                'message': f'No estimates for ClientID: {client_id}',
+                'data': []
+            }
+            return Response(data, status=status.HTTP_404_NOT_FOUND)
+
 # API for User by deviceinfo and mobilenumber
 class GetUserDetails(generics.ListAPIView):
     serializer_class = UserSerializer
