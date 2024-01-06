@@ -438,6 +438,9 @@ class BusinessDetailsAPI(ModelViewSet):
             else:
                 new_business_id = last_business_id + 1
 
+            request.data['status'] = "Trial"
+            request.data['multiuser'] = 0
+            
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save(businessid=new_business_id)  # Assuming 'businessid' is a field in your serializer
