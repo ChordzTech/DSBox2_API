@@ -2026,3 +2026,34 @@ class SubscriptionEndingSoon(generics.ListAPIView):
                 'message': 'An error occurred',
                 'data': str(e)
             })
+
+# API for subuser list
+class GetSubUserList(generics.ListAPIView):
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        business_id = self.kwargs.get('businessid')
+        if business_id is not None:
+            queryset = Userdetails.objects.filter(businessid=business_id)
+            return queryset
+        else:
+            return Userdetails.objects.none()
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if queryset.exists():
+            serializer = self.get_serializer(queryset, many=True)
+            data = {
+                "status": "success",
+                "code": 200,
+                "message": "User fetched successfully",
+                "data": serializer.data
+            }
+        else:
+            data = {
+                "status": "error",
+                "code": 404,
+                "message": "No Users found for the provided businessid",
+                "data": []
+            }
+        return Response(data)
