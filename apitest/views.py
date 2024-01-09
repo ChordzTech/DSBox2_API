@@ -2057,3 +2057,66 @@ class GetSubUserList(generics.ListAPIView):
                 "data": []
             }
         return Response(data)
+    
+# API for subscription for specific business
+class SubscriptionforBusiness(generics.ListAPIView):
+    serializer_class = TransactionSerializer
+
+    def get(self, request, *args, **kwargs):
+        try:
+            business_id = self.kwargs.get("businessid")
+
+            if business_id is None:
+                return Response({
+                    'status': 'fail',
+                    'code': 400,
+                    'message': 'Business ID not provided',
+                    'data': []
+                })
+
+            # Get current date
+            current_date = datetime.now().date()
+
+            # Retrieve transactions for the specified business_id
+            transactions = Transactiondetails.objects.filter(businessid=business_id)
+
+            # Initialize the response dictionary
+            response_data = {
+                'status': 'success',
+                'code': 200,
+                'message': f'Subscription details for business ID {business_id}',
+                'data': []
+            }
+
+            unique_end_dates = set()  # Set to store unique end dates
+
+            for transaction in transactions:
+                # Calculate the end date by adding duration days to the transaction date
+                end_date = transaction.transactiondate + timedelta(days=transaction.duration)
+
+                # Calculate remaining days by subtracting current date from the end date
+                remaining_days = (end_date - current_date).days
+
+                # Add unique end dates to the set
+                if remaining_days > 7 or 1 <= remaining_days <= 7:
+                    unique_end_dates.add(end_date.strftime("%Y-%m-%d"))
+
+            # Add unique end dates to the response data
+            response_data['data'] = [{'end_date': date} for date in unique_end_dates]
+
+            if not response_data['data']:
+                response_data['message'] = f'No active subscription found for business ID {business_id}'
+                response_data['data'].append({
+                    'subscription_status': 'Your subscription is ended'
+                })
+
+            return Response(response_data)
+
+        except Exception as e:
+            # Handle other potential exceptions
+            return Response({
+                'status': 'error',
+                'code': 500,
+                'message': 'An error occurred',
+                'data': str(e)
+            })

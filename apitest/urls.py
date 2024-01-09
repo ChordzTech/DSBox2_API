@@ -22,6 +22,7 @@ from apitest.views import (
     PlydetailsAPI,
     SubscriptionDetailsAPI,
     SubscriptionEndingSoon,
+    SubscriptionforBusiness,
     TransactionAPI,
     UserdetailAPI,
 )
@@ -49,6 +50,7 @@ urlpatterns = [
     path("api/GetSubUserList/<int:businessid>/", GetSubUserList.as_view()),
     path("api/GetUserDetails/<int:mobileno>/<str:deviceinfo>/", GetUserDetails.as_view()),
     path("api/SubcriptionEndingSoon/", SubscriptionEndingSoon.as_view()),
+    path("api/SubscriptionforBusiness/<int:businessid>", SubscriptionforBusiness.as_view()),
     path("api/TransactionDetails/",
         TransactionAPI.as_view({"get": "list", "post": "create"}),
     ),
