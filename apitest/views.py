@@ -2081,7 +2081,7 @@ class SubscriptionforBusiness(generics.ListAPIView):
             transactions = Transactiondetails.objects.filter(businessid=business_id)
 
             # Initialize a dictionary to store unique end dates and remaining days
-            subscription_details = {}
+            subscription_details = []
 
             # Iterate through transactions to collect unique end dates and remaining days
             for transaction in transactions:
@@ -2091,28 +2091,19 @@ class SubscriptionforBusiness(generics.ListAPIView):
                 # Calculate remaining days by subtracting the current date from the end date
                 remaining_days = (end_date - current_date).days
 
-                # Add unique end date and remaining days to the dictionary
-                if remaining_days > 0:
-                    date_key = end_date.strftime("%Y-%m-%d")
-                    if remaining_days <= 7:
-                        subscription_details[date_key] = {
+                subscription_detail = {
                             'end_date': end_date.strftime("%Y-%m-%d"),
                             'remaining_days': remaining_days
                         }
-                    else:
-                        subscription_details[date_key] = {
-                            'end_date': end_date.strftime("%Y-%m-%d")
-                        }
-
-            # Create a list of subscription details from the dictionary
-            subscription_details_list = list(subscription_details.values())
+            # Append subscription details to the list
+            subscription_details.append(subscription_detail)    
 
             # Create the response dictionary
             response_data = {
                 'status': 'success',
                 'code': 200,
                 'message': f'Subscription details for business ID {business_id}',
-                'data': subscription_details_list
+                'data': subscription_details
             }
 
             # If no active subscriptions found, include a subscription status message
