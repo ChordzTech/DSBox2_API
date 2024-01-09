@@ -2080,30 +2080,42 @@ class SubscriptionforBusiness(generics.ListAPIView):
             # Retrieve transactions for the specified business_id
             transactions = Transactiondetails.objects.filter(businessid=business_id)
 
-            # Initialize the response dictionary
-            response_data = {
-                'status': 'success',
-                'code': 200,
-                'message': f'Subscription details for business ID {business_id}',
-                'data': []
-            }
+            # Initialize a dictionary to store unique end dates and remaining days
+            subscription_details = {}
 
-            unique_end_dates = set()  # Set to store unique end dates
-
+            # Iterate through transactions to collect unique end dates and remaining days
             for transaction in transactions:
                 # Calculate the end date by adding duration days to the transaction date
                 end_date = transaction.transactiondate + timedelta(days=transaction.duration)
 
-                # Calculate remaining days by subtracting current date from the end date
+                # Calculate remaining days by subtracting the current date from the end date
                 remaining_days = (end_date - current_date).days
 
-                # Add unique end dates to the set
-                if remaining_days > 7 or 1 <= remaining_days <= 7:
-                    unique_end_dates.add(end_date.strftime("%Y-%m-%d"))
+                # Add unique end date and remaining days to the dictionary
+                if remaining_days > 0:
+                    date_key = end_date.strftime("%Y-%m-%d")
+                    if remaining_days <= 7:
+                        subscription_details[date_key] = {
+                            'end_date': end_date.strftime("%Y-%m-%d"),
+                            'remaining_days': remaining_days
+                        }
+                    else:
+                        subscription_details[date_key] = {
+                            'end_date': end_date.strftime("%Y-%m-%d")
+                        }
 
-            # Add unique end dates to the response data
-            response_data['data'] = [{'end_date': date} for date in unique_end_dates]
+            # Create a list of subscription details from the dictionary
+            subscription_details_list = list(subscription_details.values())
 
+            # Create the response dictionary
+            response_data = {
+                'status': 'success',
+                'code': 200,
+                'message': f'Subscription details for business ID {business_id}',
+                'data': subscription_details_list
+            }
+
+            # If no active subscriptions found, include a subscription status message
             if not response_data['data']:
                 response_data['message'] = f'No active subscription found for business ID {business_id}'
                 response_data['data'].append({
