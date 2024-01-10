@@ -43,7 +43,7 @@ urlpatterns = [
     path("api/", include(router.urls)),
     path("api/AdminHome/", AdminHomeAPI.as_view()),
     path("api/AdminHome2/", AdminHomeAPI2.as_view()),
-    path("api/AdminLogin/<str:adminname>/<str:adminpassword>/", AdminLoginAPI.as_view()), 
+    path("api/AdminLogin/", AdminLoginAPI.as_view()), 
     path("api/GetClientByB/<int:businessid>/", GetClientByB.as_view()),
     path("api/GetEstimatesByUB/<int:businessid>/<int:userid>/",GetEstimatesByUB.as_view()),
     path("api/GetEstimatesByClient/<int:clientid>/",GetEstimatesByClient.as_view()),

@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db.models import Q, Max
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.views import APIView
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework import status
 from rest_framework import generics
 from rest_framework.response import Response
@@ -23,6 +24,7 @@ from .models import (
     Userdetails,
 )
 from .serializers import (
+    AdminLoginSerializer,
     AdministratorsSerializer,
     AppconfigSerializer,
     Base64CodeSerializer,
@@ -1942,29 +1944,30 @@ class AdminHomeAPI2(generics.ListAPIView):
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 # API for Admin login
-class AdminLoginAPI(generics.ListAPIView):
-    queryset = Administrators.objects.all()
-    serializer_class = AdministratorsSerializer
+class AdminLoginAPI(APIView):
+    serializer_class = AdminLoginSerializer  # Specify the serializer class
 
-    def get(self, request, adminname, adminpassword, *args, **kwargs):
-        if adminname and adminpassword:
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        
+        if serializer.is_valid():
+            adminname = serializer.validated_data['adminname']
+            adminpassword = serializer.validated_data['adminpassword']
+
             try:
-                # Perform a case-sensitive check in Python after retrieving the user
-                admin = Administrators.objects.get(adminname__iexact=adminname)
+                # Perform a case-sensitive check after retrieving the user
+                admin = Administrators.objects.get(adminname=adminname)
                 
-                # Ensure case sensitivity using Python check
-                if admin.adminname == adminname:
-                    stored_password = admin.adminpassword
-
-                    # Check if the provided password matches the stored encrypted password
-                    if check_password(adminpassword, stored_password):
-                        return Response({'message': 'Valid User'}, status=status.HTTP_200_OK)
-                    else:
-                        return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
+                # Ensure case sensitivity for both adminname and password
+                if admin.adminname == adminname and check_password(adminpassword, admin.adminpassword):
+                    return Response({'message': 'Valid User'}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
             except Administrators.DoesNotExist:
-                return Response({'message': 'Invalid user'}, status=status.HTTP_401_UNAUTHORIZED)
-        else:
-            return Response({'message': 'Please provide both adminname and adminpassword'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # In case of invalid serializer data, return validation errors
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 # API for subscriptions which are ending soon
 class SubscriptionEndingSoon(generics.ListAPIView):
@@ -2080,7 +2083,7 @@ class SubscriptionforBusiness(generics.ListAPIView):
             # Retrieve transactions for the specified business_id
             transactions = Transactiondetails.objects.filter(businessid=business_id)
 
-            # Initialize a dictionary to store unique end dates and remaining days
+            # Initialize a list to store unique end dates and remaining days
             subscription_details = []
 
             # Iterate through transactions to collect unique end dates and remaining days
