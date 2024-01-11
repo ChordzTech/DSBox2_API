@@ -1,15 +1,13 @@
 import os
 from datetime import datetime, timedelta
 from django.conf import settings
-from django.db.models import Q, Max
+from django.db.models import Max
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.views import APIView
-from rest_framework.exceptions import AuthenticationFailed
 from rest_framework import status
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from urllib.parse import unquote
 from .models import (
     Administrators,
     Appconfig,
@@ -1807,28 +1805,14 @@ class GetUserDetails(generics.ListAPIView):
 
     def get_queryset(self):
         mobile_no = self.kwargs.get("mobileno")
-        device_info = self.kwargs.get("deviceinfo")
+        android_id = self.kwargs.get("androidid")
         
-        # Decode URL-encoded parameters to handle spaces properly
-        device_info = unquote(device_info)
-        
-        # Remove leading and trailing spaces from the device_info value
-        device_info = device_info.strip()
-
-        # Split the device_info string by spaces and create a query for each word
-        device_info_query = Q()
-        for word in device_info.split():
-            device_info_query &= Q(deviceinfo__icontains=word)
-
-        queryset = Userdetails.objects.filter(mobileno=mobile_no).filter(device_info_query)
+        queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid=android_id)
         return queryset
 
     def get(self, request, *args, **kwargs):
         mobile_no = self.kwargs.get("mobileno")
-        device_info = self.kwargs.get("deviceinfo")
-        
-        # Decode URL-encoded parameters for response message
-        trimmed_device_info = unquote(device_info).strip()
+        android_id = self.kwargs.get("androidid")
 
         queryset = self.get_queryset()
 
@@ -1837,7 +1821,7 @@ class GetUserDetails(generics.ListAPIView):
             data = {
                 'status': 'success',
                 'code': status.HTTP_200_OK,
-                'message': f'Record under {mobile_no} and {trimmed_device_info}',
+                'message': f'Record under {mobile_no} and {android_id}',
                 'data': serializer.data
             }
             return Response(data, status=status.HTTP_200_OK)
@@ -1845,7 +1829,7 @@ class GetUserDetails(generics.ListAPIView):
         data = {
             'status': 'error',
             'code': status.HTTP_404_NOT_FOUND,
-            'message': f'No record for {mobile_no} and {trimmed_device_info}',
+            'message': f'No record for {mobile_no} and {android_id}',
             'data': []
         }
         return Response(data, status=status.HTTP_404_NOT_FOUND)

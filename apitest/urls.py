@@ -48,7 +48,7 @@ urlpatterns = [
     path("api/GetEstimatesByUB/<int:businessid>/<int:userid>/",GetEstimatesByUB.as_view()),
     path("api/GetEstimatesByClient/<int:clientid>/",GetEstimatesByClient.as_view()),
     path("api/GetSubUserList/<int:businessid>/", GetSubUserList.as_view()),
-    path("api/GetUserDetails/<int:mobileno>/<str:deviceinfo>/", GetUserDetails.as_view()),
+    path("api/GetUserDetails/<int:mobileno>/<str:androidid>/", GetUserDetails.as_view()),
     path("api/SubcriptionEndingSoon/", SubscriptionEndingSoon.as_view()),
     path("api/SubscriptionforBusiness/<int:businessid>", SubscriptionforBusiness.as_view()),
     path("api/TransactionDetails/",
