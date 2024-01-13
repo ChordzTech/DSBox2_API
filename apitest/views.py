@@ -2064,41 +2064,34 @@ class SubscriptionforBusiness(generics.ListAPIView):
             # Get current date
             current_date = datetime.now().date()
 
-            # Retrieve transactions for the specified business_id
-            transactions = Transactiondetails.objects.filter(businessid=business_id)
+            # Retrieve the latest transaction for the specified business_id
+            latest_transaction = Transactiondetails.objects.filter(businessid=business_id).order_by('-transactiondate').first()
 
-            # Initialize a list to store unique end dates and remaining days
-            subscription_details = []
+            if not latest_transaction:
+                return Response({
+                    'status': 'success',
+                    'code': 200,
+                    'message': f'No transactions found for business ID {business_id}',
+                    'data': []
+                })
 
-            # Iterate through transactions to collect unique end dates and remaining days
-            for transaction in transactions:
-                # Calculate the end date by adding duration days to the transaction date
-                end_date = transaction.transactiondate + timedelta(days=transaction.duration)
+            # Calculate end date and remaining days for the latest transaction
+            end_date = latest_transaction.transactiondate + timedelta(days=latest_transaction.duration)
+            remaining_days = max((end_date - current_date).days, 0)
 
-                # Calculate remaining days by subtracting the current date from the end date
-                remaining_days = (end_date - current_date).days
+            status = 'Trial' if remaining_days <= 0 else 'Active'
 
-                subscription_detail = {
-                            'end_date': end_date.strftime("%Y-%m-%d"),
-                            'remaining_days': remaining_days
-                        }
-            # Append subscription details to the list
-            subscription_details.append(subscription_detail)    
-
-            # Create the response dictionary
+            # Create the response dictionary with details from the latest transaction
             response_data = {
                 'status': 'success',
                 'code': 200,
                 'message': f'Subscription details for business ID {business_id}',
-                'data': subscription_details
+                'data': [{
+                    'end_date': end_date.strftime("%Y-%m-%d"),
+                    'remaining_days': remaining_days,
+                    'status': status
+                }]
             }
-
-            # If no active subscriptions found, include a subscription status message
-            if not response_data['data']:
-                response_data['message'] = f'No active subscription found for business ID {business_id}'
-                response_data['data'].append({
-                    'subscription_status': 'Your subscription is ended'
-                })
 
             return Response(response_data)
 
