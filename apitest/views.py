@@ -141,7 +141,7 @@ class AdministratorAPI(ModelViewSet):
             adminpassword = request.data.get("adminpassword")
             hashpassword = make_password(adminpassword)
             request.data["adminpassword"] = hashpassword
-            # print(check_password('Actual Password', 'encrypted password'))
+           
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -166,7 +166,7 @@ class AdministratorAPI(ModelViewSet):
             adminpassword = request.data.get("adminpassword")
             hashpassword = make_password(adminpassword)
             request.data["adminpassword"] = hashpassword
-            # print(check_password('Actual Password', 'encrypted password'))
+            
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -192,7 +192,7 @@ class AdministratorAPI(ModelViewSet):
             adminpassword = request.data.get("adminpassword")
             hashpassword = make_password(adminpassword)
             request.data["adminpassword"] = hashpassword
-            # print(check_password('Actual Password', 'encrypted password'))
+            
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -857,7 +857,7 @@ class DevelopersAPI(ModelViewSet):
             developerpassword = request.data.get("developerpassword")
             hashpassword = make_password(developerpassword)
             request.data["developerpassword"] = hashpassword
-            # print(check_password('Actual Password', 'encrypted password'))
+            
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -882,7 +882,7 @@ class DevelopersAPI(ModelViewSet):
             developerpassword = request.data.get("developerpassword")
             hashpassword = make_password(developerpassword)
             request.data["developerpassword"] = hashpassword
-            # print(check_password('Actual Password', 'encrypted password'))
+            
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -908,7 +908,7 @@ class DevelopersAPI(ModelViewSet):
             developerpassword = request.data.get("developerpassword")
             hashpassword = make_password(developerpassword)
             request.data["developerpassword"] = hashpassword
-            # print(check_password('Actual Password', 'encrypted password'))
+           
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -1563,8 +1563,6 @@ class UserdetailAPI(ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             business_id = request.data.get("businessid")
-            # userpassword = request.data.get("userpassword")
-            # Assuming other fields such as androidid, deviceinfo are obtained similarly
 
             existing_users = Userdetails.objects.filter(businessid=business_id)
             max_user_id = existing_users.aggregate(Max('userid'))['userid__max']
@@ -1628,7 +1626,7 @@ class UserdetailAPI(ModelViewSet):
             userpassword = request.data.get("userpassword")
             hashpassword = make_password(userpassword)
             request.data["userpassword"] = hashpassword
-            # print(check_password('Actual Password', 'encrypted password'))
+
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -1654,7 +1652,7 @@ class UserdetailAPI(ModelViewSet):
             userpassword = request.data.get("userpassword")
             hashpassword = make_password(userpassword)
             request.data["userpassword"] = hashpassword
-            # print(check_password('Actual Password', 'encrypted password'))
+
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -2080,6 +2078,11 @@ class SubscriptionforBusiness(generics.ListAPIView):
             remaining_days = max((end_date - current_date).days, 0)
 
             status = 'Trial' if remaining_days <= 0 else 'Active'
+
+            # Check if remaining_days is 0 and update 'useraccess' for all users under the businessid
+            if remaining_days == 0:
+                # Update 'useraccess' for all users under the specified businessid
+                Userdetails.objects.filter(businessid=business_id).update(useraccess=1)
 
             # Create the response dictionary with details from the latest transaction
             response_data = {
