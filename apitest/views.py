@@ -443,7 +443,7 @@ class BusinessDetailsAPI(ModelViewSet):
             
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.save(businessid=new_business_id)  # Assuming 'businessid' is a field in your serializer
+            serializer.save(businessid=new_business_id)
             api_response = {
                 "status": "success",
                 "code": status.HTTP_201_CREATED,
@@ -1003,13 +1003,12 @@ class EstimatedetailAPI(ModelViewSet):
             user_id = request.data.get("userid")
             client_id = request.data.get("clientid")
 
-            existing_estimates = Estimatedetails.objects.filter(businessid=business_id, userid=user_id, clientid=client_id)
-            max_estimate_id = existing_estimates.aggregate(Max('estimateid'))['estimateid__max']
+            # Get the maximum estimateid for the given business, user, and client
+            existing_estimates = Estimatedetails.objects.filter(businessid=business_id)
+            max_estimate_id = existing_estimates.aggregate(Max("estimateid"))["estimateid__max"]
 
-            if max_estimate_id is None:
-                new_estimate_id = int(f"{business_id}00001")
-            else:
-                new_estimate_id = max_estimate_id + 1
+            # Generate a new estimateid by incrementing the maximum one (or use a default if no records exist)
+            new_estimate_id = max_estimate_id + 1 if max_estimate_id is not None else int(f"{business_id}00001")
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -1419,13 +1418,13 @@ class TransactionAPI(ModelViewSet):
             else:
                 new_transaction_id = last_transaction_id + 1
 
-            request.data['transactionid'] = new_transaction_id  # Assuming 'transactionid' needs to be provided in the request data
+            request.data['transactionid'] = new_transaction_id  
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            transaction_instance = serializer.save()  # Save transaction and get the instance
+            transaction_instance = serializer.save() 
 
-            business_id = transaction_instance.businessid  # Assuming 'businessid' is a field in Transactiondetails
+            business_id = transaction_instance.businessid  
             business_details = Businessdetails.objects.get(businessid=business_id)
 
             # Assuming 'transactiondate' and 'subscriptiondate' are fields in respective models
@@ -1563,6 +1562,7 @@ class UserdetailAPI(ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             business_id = request.data.get("businessid")
+            mobile_no = request.data.get("mobileno")
 
             existing_users = Userdetails.objects.filter(businessid=business_id)
             max_user_id = existing_users.aggregate(Max('userid'))['userid__max']
@@ -1585,6 +1585,9 @@ class UserdetailAPI(ModelViewSet):
                 username = request.data.get("username")
                 mobileno = request.data.get("mobileno")
                 userrole = 'User'
+
+            if Userdetails.objects.filter(mobileno=mobile_no).exists():
+                return Response({"message": "Mobile number already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
             user_data = {
                 'userid': new_user_id,
@@ -1618,8 +1621,6 @@ class UserdetailAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
-
 
     def update(self, request, *args, **kwargs):
         try:
@@ -1697,15 +1698,10 @@ class GetClientByB(generics.ListAPIView):
     serializer_class = ClientdetailSerializer
 
     def get_queryset(self):
-        # client_id = self.kwargs["clientid"]
-        # user_id = self.kwargs["userid"]
         business_id = self.kwargs["businessid"]
-        # return Clientdetails.objects.filter(clientid=client_id, userid=user_id)
         return Clientdetails.objects.filter(businessid=business_id)
 
     def list(self, request, *args, **kwargs):
-        # client_id = self.kwargs["clientid"]
-        # user_id = self.kwargs["user_id"]
         business_id = self.kwargs["businessid"]
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
@@ -1927,7 +1923,7 @@ class AdminHomeAPI2(generics.ListAPIView):
         
 # API for Admin login
 class AdminLoginAPI(APIView):
-    serializer_class = AdminLoginSerializer  # Specify the serializer class
+    serializer_class = AdminLoginSerializer 
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
@@ -1984,7 +1980,6 @@ class SubscriptionEndingSoon(generics.ListAPIView):
                             'email': record.email,
                             'subscription_date': record.subscriptiondate,
                             'remaining_days' : remaining_days,
-                            # Include other necessary fields from Businessdetails
                             # Add more fields as required
                         })
 
