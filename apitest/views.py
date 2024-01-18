@@ -37,6 +37,7 @@ from .serializers import (
     UserSerializer,
 )
 
+
 # API for Image Code
 class Base64CodeView(APIView):
     serializer_class = Base64CodeSerializer
@@ -57,15 +58,15 @@ class Base64CodeView(APIView):
                 code_file.write(base64_code)
 
             response_data = {
-                "status" : "sucess",
-                "code" : status.HTTP_200_OK,
+                "status": "success",
+                "code": status.HTTP_200_OK,
                 "message": "Base64 code stored successfully",
             }
 
             return Response(response_data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def get(self, request, *args, **kwargs):
         file_name = "Image_Code.txt"
         code_file_path = os.path.join(settings.MEDIA_ROOT, file_name)
@@ -75,8 +76,8 @@ class Base64CodeView(APIView):
                 base64_code = code_file.read()
 
             response_data = {
-                "status" : "success",
-                "code" : status.HTTP_200_OK,
+                "status": "success",
+                "code": status.HTTP_200_OK,
                 "base64_code": base64_code,
             }
 
@@ -84,12 +85,13 @@ class Base64CodeView(APIView):
 
         except FileNotFoundError:
             error_data = {
-                "status" : "error",
-                "code" : status.HTTP_404_NOT_FOUND,
+                "status": "error",
+                "code": status.HTTP_404_NOT_FOUND,
                 "message": "File not found",
             }
 
             return Response(error_data, status=status.HTTP_404_NOT_FOUND)
+
 
 # API for Administrator
 class AdministratorAPI(ModelViewSet):
@@ -141,7 +143,7 @@ class AdministratorAPI(ModelViewSet):
             adminpassword = request.data.get("adminpassword")
             hashpassword = make_password(adminpassword)
             request.data["adminpassword"] = hashpassword
-           
+
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -166,7 +168,7 @@ class AdministratorAPI(ModelViewSet):
             adminpassword = request.data.get("adminpassword")
             hashpassword = make_password(adminpassword)
             request.data["adminpassword"] = hashpassword
-            
+
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -192,7 +194,7 @@ class AdministratorAPI(ModelViewSet):
             adminpassword = request.data.get("adminpassword")
             hashpassword = make_password(adminpassword)
             request.data["adminpassword"] = hashpassword
-            
+
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -233,6 +235,7 @@ class AdministratorAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
 
 # API for Appconfig
 class AppconfigAPI(ModelViewSet):
@@ -367,6 +370,7 @@ class AppconfigAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
+
 # API for Business Details
 class BusinessDetailsAPI(ModelViewSet):
     queryset = Businessdetails.objects.all()
@@ -440,7 +444,7 @@ class BusinessDetailsAPI(ModelViewSet):
 
             request.data['status'] = "Trial"
             request.data['multiuser'] = 0
-            
+
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save(businessid=new_business_id)
@@ -459,7 +463,6 @@ class BusinessDetailsAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
 
     def update(self, request, *args, **kwargs):
         try:
@@ -525,6 +528,7 @@ class BusinessDetailsAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
 
 # API for Businesses
 class BusinessesAPI(ModelViewSet):
@@ -658,6 +662,7 @@ class BusinessesAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
 
 # API for Client Details
 class ClientDetailsAPI(ModelViewSet):
@@ -803,6 +808,7 @@ class ClientDetailsAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
+
 # API for Developers
 class DevelopersAPI(ModelViewSet):
     queryset = Developers.objects.all()
@@ -857,7 +863,7 @@ class DevelopersAPI(ModelViewSet):
             developerpassword = request.data.get("developerpassword")
             hashpassword = make_password(developerpassword)
             request.data["developerpassword"] = hashpassword
-            
+
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -882,7 +888,7 @@ class DevelopersAPI(ModelViewSet):
             developerpassword = request.data.get("developerpassword")
             hashpassword = make_password(developerpassword)
             request.data["developerpassword"] = hashpassword
-            
+
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -908,7 +914,7 @@ class DevelopersAPI(ModelViewSet):
             developerpassword = request.data.get("developerpassword")
             hashpassword = make_password(developerpassword)
             request.data["developerpassword"] = hashpassword
-           
+
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -947,6 +953,7 @@ class DevelopersAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
 
 # API for Estimatedetails
 class EstimatedetailAPI(ModelViewSet):
@@ -1093,6 +1100,7 @@ class EstimatedetailAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
+
 # API for Plydetails
 class PlydetailsAPI(ModelViewSet):
     queryset = Plydetails.objects.all()
@@ -1225,6 +1233,7 @@ class PlydetailsAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
 
 # API for Subscription
 class SubscriptionDetailsAPI(ModelViewSet):
@@ -1359,6 +1368,7 @@ class SubscriptionDetailsAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
+
 # API for Transaction
 class TransactionAPI(ModelViewSet):
     queryset = Transactiondetails.objects.all()
@@ -1418,13 +1428,13 @@ class TransactionAPI(ModelViewSet):
             else:
                 new_transaction_id = last_transaction_id + 1
 
-            request.data['transactionid'] = new_transaction_id  
+            request.data['transactionid'] = new_transaction_id
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            transaction_instance = serializer.save() 
+            transaction_instance = serializer.save()
 
-            business_id = transaction_instance.businessid  
+            business_id = transaction_instance.businessid
             business_details = Businessdetails.objects.get(businessid=business_id)
 
             # Assuming 'transactiondate' and 'subscriptiondate' are fields in respective models
@@ -1509,6 +1519,7 @@ class TransactionAPI(ModelViewSet):
                 "message": error_message,
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
 
 # API for User Details
 class UserdetailAPI(ModelViewSet):
@@ -1693,6 +1704,7 @@ class UserdetailAPI(ModelViewSet):
             }
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
+
 # API for Client List by ClientID, BusinessID
 class GetClientByB(generics.ListAPIView):
     serializer_class = ClientdetailSerializer
@@ -1721,7 +1733,8 @@ class GetClientByB(generics.ListAPIView):
                 'data': []
             }
             return Response(data, status=status.HTTP_404_NOT_FOUND)
-    
+
+
 # API for Estimates by UserID and BusinessID
 class GetEstimatesByUB(generics.ListAPIView):
     serializer_class = EstimatedetailSerializer
@@ -1764,6 +1777,7 @@ class GetEstimatesByUB(generics.ListAPIView):
         except Exception as e:
             return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 # API for Estimates by ClientID
 class GetEstimatesByClient(generics.ListAPIView):
     serializer_class = EstimatedetailSerializer
@@ -1793,6 +1807,7 @@ class GetEstimatesByClient(generics.ListAPIView):
             }
             return Response(data, status=status.HTTP_404_NOT_FOUND)
 
+
 # API for User by deviceinfo and mobilenumber
 class GetUserDetails(generics.ListAPIView):
     serializer_class = UserSerializer
@@ -1800,7 +1815,7 @@ class GetUserDetails(generics.ListAPIView):
     def get_queryset(self):
         mobile_no = self.kwargs.get("mobileno")
         android_id = self.kwargs.get("androidid")
-        
+
         queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid=android_id)
         return queryset
 
@@ -1828,9 +1843,10 @@ class GetUserDetails(generics.ListAPIView):
         }
         return Response(data, status=status.HTTP_404_NOT_FOUND)
 
+
 # API for Admin home page
 class AdminHomeAPI(generics.ListAPIView):
-    serializer_class = BusinessdetailSerializer  
+    serializer_class = BusinessdetailSerializer
 
     def get_serializer(self, *args, **kwargs):
         return None  # Override get_serializer method to return None
@@ -1847,7 +1863,8 @@ class AdminHomeAPI(generics.ListAPIView):
             past_week_start = current_week_start - timedelta(days=7)
             past_week_end = current_week_start - timedelta(days=1)
 
-            current_week_records = self.get_queryset().filter(activationdate__range=(current_week_start, current_week_end))
+            current_week_records = self.get_queryset().filter(
+                activationdate__range=(current_week_start, current_week_end))
             past_week_records = self.get_queryset().filter(activationdate__range=(past_week_start, past_week_end))
 
             current_week_data = self.get_records_per_day(current_week_records, current_week_start, current_week_end)
@@ -1892,12 +1909,13 @@ class AdminHomeAPI(generics.ListAPIView):
             current_date += timedelta(days=1)
         return date_records
 
+
 # API based on subscription for Admin
 class AdminHomeAPI2(generics.ListAPIView):
-    serializer_class = BusinessdetailSerializer  
+    serializer_class = BusinessdetailSerializer
 
     def get_queryset(self):
-        return Businessdetails.objects.order_by('-subscriptiondate') # for descending order
+        return Businessdetails.objects.order_by('-subscriptiondate')  # for descending order
         # return Businessdetails.objects.order_by('subscriptiondate') # for ascending order
 
     def list(self, request, *args, **kwargs):
@@ -1905,10 +1923,10 @@ class AdminHomeAPI2(generics.ListAPIView):
             queryset = self.get_queryset()
             serializer = self.serializer_class(queryset, many=True)
             response_data = {
-                'status' : 'success',
-                'code' : status.HTTP_200_OK,
-                'messege' : 'Business Details based on subscription date',
-                'data' : serializer.data
+                'status': 'success',
+                'code': status.HTTP_200_OK,
+                'messege': 'Business Details based on subscription date',
+                'data': serializer.data
             }
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -1920,14 +1938,15 @@ class AdminHomeAPI2(generics.ListAPIView):
                 'data': None
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
+
 # API for Admin login
 class AdminLoginAPI(APIView):
-    serializer_class = AdminLoginSerializer 
+    serializer_class = AdminLoginSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
-        
+
         if serializer.is_valid():
             adminname = serializer.validated_data['adminname']
             adminpassword = serializer.validated_data['adminpassword']
@@ -1935,7 +1954,7 @@ class AdminLoginAPI(APIView):
             try:
                 # Perform a case-sensitive check after retrieving the user
                 admin = Administrators.objects.get(adminname=adminname)
-                
+
                 # Ensure case sensitivity for both adminname and password
                 if admin.adminname == adminname and check_password(adminpassword, admin.adminpassword):
                     return Response({'message': 'Valid User'}, status=status.HTTP_200_OK)
@@ -1943,14 +1962,15 @@ class AdminLoginAPI(APIView):
                     return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
             except Administrators.DoesNotExist:
                 return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
         # In case of invalid serializer data, return validation errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
+
 # API for subscriptions which are ending soon
 class SubscriptionEndingSoon(generics.ListAPIView):
     serializer_class = TransactionSerializer
-    
+
     def get(self, request):
         try:
             # Get current date
@@ -1964,10 +1984,10 @@ class SubscriptionEndingSoon(generics.ListAPIView):
             for transaction in transactions:
                 # Calculate the end date by adding duration days to the transaction date
                 end_date = transaction.transactiondate + timedelta(days=transaction.duration)
-                
+
                 # Calculate remaining days by subtracting current date from the end date
                 remaining_days = (end_date - current_date).days
-                
+
                 # Check if remaining days are within the range of 1 to 7
                 if 1 <= remaining_days <= 7:
                     # Retrieve business details related to this transaction
@@ -1979,7 +1999,7 @@ class SubscriptionEndingSoon(generics.ListAPIView):
                             'contact_no': record.contactno,
                             'email': record.email,
                             'subscription_date': record.subscriptiondate,
-                            'remaining_days' : remaining_days,
+                            'remaining_days': remaining_days,
                             # Add more fields as required
                         })
 
@@ -2007,6 +2027,7 @@ class SubscriptionEndingSoon(generics.ListAPIView):
                 'data': str(e)
             })
 
+
 # API for subuser list
 class GetSubUserList(generics.ListAPIView):
     serializer_class = UserSerializer
@@ -2018,7 +2039,7 @@ class GetSubUserList(generics.ListAPIView):
             return queryset
         else:
             return Userdetails.objects.none()
-    
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         if queryset.exists():
@@ -2037,7 +2058,8 @@ class GetSubUserList(generics.ListAPIView):
                 "data": []
             }
         return Response(data)
-    
+
+
 # API for subscription for specific business
 class SubscriptionforBusiness(generics.ListAPIView):
     serializer_class = TransactionSerializer
@@ -2058,7 +2080,8 @@ class SubscriptionforBusiness(generics.ListAPIView):
             current_date = datetime.now().date()
 
             # Retrieve the latest transaction for the specified business_id
-            latest_transaction = Transactiondetails.objects.filter(businessid=business_id).order_by('-transactiondate').first()
+            latest_transaction = Transactiondetails.objects.filter(businessid=business_id).order_by(
+                '-transactiondate').first()
 
             if not latest_transaction:
                 return Response({
