@@ -442,6 +442,16 @@ class BusinessDetailsAPI(ModelViewSet):
             else:
                 new_business_id = last_business_id + 1
 
+            request.data['marginlength'] = '50'
+            request.data['marginwidth'] = '20'
+            request.data['brustingfactor'] = '14'
+            request.data['gsm'] = '150'
+            request.data['rate'] = '24'
+            request.data['flutefactor'] = '1.5'
+            request.data['waste'] = '3'
+            request.data['conversionrate'] = '10'
+            request.data['profit'] = '15'
+            request.data['tax'] = '18'
             request.data['status'] = "Trial"
             request.data['multiuser'] = 0
 
