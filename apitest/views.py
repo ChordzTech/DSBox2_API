@@ -454,6 +454,7 @@ class BusinessDetailsAPI(ModelViewSet):
             request.data['tax'] = '18'
             request.data['status'] = "Trial"
             request.data['multiuser'] = 0
+            request.data['estimatenote'] = "1.Valid for 15 days only.-2.Taxes extra as applicable, if not mentioned in quotation.-3.Minimum order quantity 1000. If less than 1000, then transport charges extra."
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
