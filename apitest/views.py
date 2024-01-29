@@ -1609,7 +1609,12 @@ class UserdetailAPI(ModelViewSet):
                 userrole = 'User'
 
             if Userdetails.objects.filter(mobileno=mobile_no).exists():
-                return Response({"message": "Mobile number already exists"}, status=status.HTTP_400_BAD_REQUEST)
+                api_response = {
+                    "status": "error",
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Mobile number already exists",
+                }
+                return Response(api_response)
 
             user_data = {
                 'userid': new_user_id,
