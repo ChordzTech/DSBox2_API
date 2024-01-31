@@ -27,18 +27,12 @@ class Administrators(models.Model):
 
 
 class Appconfig(models.Model):
-    configname = models.CharField(
-        db_column="ConfigName", max_length=100
-    )  # Field name made lowercase.
-    configvalue = models.CharField(
-        db_column="ConfigValue", max_length=500, blank=True, null=True
-    )  # Field name made lowercase.
-    configid = models.IntegerField(
-        db_column="ConfigId", primary_key=True
-    )  # Field name made lowercase.
+    configid = models.AutoField(db_column='ConfigId', primary_key=True)  # Field name made lowercase.
+    configname = models.CharField(db_column='ConfigName', max_length=100)  # Field name made lowercase.
+    configvalue = models.CharField(db_column='ConfigValue', max_length=500, blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
-        db_table = "appconfig"
+        db_table = 'appconfig'
 
 
 class Businessdetails(models.Model):
