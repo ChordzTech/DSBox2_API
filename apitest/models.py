@@ -98,6 +98,10 @@ class Businessdetails(models.Model):
     class Meta:
         db_table = "businessdetails"
 
+    @property
+    def estimate_count(self):
+        return Estimatedetails.objects.filter(businessid=self.businessid).count()
+
 
 class Businesses(models.Model):
     businessid = models.BigIntegerField(

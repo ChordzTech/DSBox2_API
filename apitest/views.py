@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timedelta
 from django.conf import settings
-from django.db.models import Max
+from django.db.models import Max, Count
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.views import APIView
 from rest_framework import status
@@ -378,18 +378,28 @@ class BusinessDetailsAPI(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            bdetails = Businessdetails.objects.all()
-            serializer = self.get_serializer(bdetails, many=True)
+            businesses = Businessdetails.objects.all() 
+            serializer = self.get_serializer(businesses, many=True)
+
+            # Get count of estimates for each BusinessID
+            estimate_counts = Estimatedetails.objects.values('businessid').annotate(EstimateCount=Count('estimateid'))
+
+            # Map the estimate counts to the corresponding businesses
+            for business_data in serializer.data:
+                business_id = business_data['businessid']
+                estimate_count = next((item['EstimateCount'] for item in estimate_counts if item['businessid'] == business_id), 0)
+                business_data['estimate_count'] = estimate_count
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_200_OK,
-                "message": "All Business Details",
+                "message": "All Businesses",
                 "data": serializer.data,
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = (
-                "An error occurred while fetching business details: {}".format(str(e))
+                "An error occurred while fetching all businesses: {}".format(str(e))
             )
             error_response = {
                 "status": "error",

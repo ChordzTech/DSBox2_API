@@ -27,10 +27,11 @@ class AppconfigSerializer(serializers.ModelSerializer):
 
 
 class BusinessdetailSerializer(serializers.ModelSerializer):
+    estimate_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Businessdetails
         fields = "__all__"
-        # fields = ('businessid', 'businessname', 'contactno', 'address', 'pincode')
 
 
 class BusinessesSerializer(serializers.ModelSerializer):
