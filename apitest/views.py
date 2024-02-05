@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import (
     Administrators,
     Appconfig,
@@ -378,14 +379,35 @@ class BusinessDetailsAPI(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            businesses = Businessdetails.objects.all() 
-            serializer = self.get_serializer(businesses, many=True)
+            # Extract starting index from the request query parameters
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Number of records per page
+
+            # Ensure ordering by primary key for consistent pagination
+            self.queryset = self.queryset.order_by('pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(self.queryset, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                page = paginator.page(page_number)
+            except PageNotAnInteger:
+                page = paginator.page(1)
+            except EmptyPage:
+                return Response({"message": "No more records available"}, status=status.HTTP_200_OK)
+
+            paginated_business = page.object_list
+            paginated_serializer = self.get_serializer(paginated_business, many=True)
+
+            # Get total count of records
+            total_records = paginator.count
 
             # Get count of estimates for each BusinessID
             estimate_counts = Estimatedetails.objects.values('businessid').annotate(EstimateCount=Count('estimateid'))
 
             # Map the estimate counts to the corresponding businesses
-            for business_data in serializer.data:
+            for business_data in paginated_serializer.data:
                 business_id = business_data['businessid']
                 estimate_count = next((item['EstimateCount'] for item in estimate_counts if item['businessid'] == business_id), 0)
                 business_data['estimate_count'] = estimate_count
@@ -393,13 +415,16 @@ class BusinessDetailsAPI(ModelViewSet):
             api_response = {
                 "status": "success",
                 "code": status.HTTP_200_OK,
-                "message": "All Businesses",
-                "data": serializer.data,
+                "total_records": total_records,
+                "start_index": start_index,
+                "limit": limit,
+                "message": f"Businessdetails starting from index {start_index}",
+                "data": paginated_serializer.data,
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
             error_message = (
-                "An error occurred while fetching all businesses: {}".format(str(e))
+                "An error occurred while fetching businesses: {}".format(str(e))
             )
             error_response = {
                 "status": "error",
@@ -558,13 +583,38 @@ class BusinessesAPI(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            business = Businesses.objects.all()
-            serializer = self.get_serializer(business, many=True)
+            # Extract starting index from the request query parameters
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Number of records per page
+
+            # Ensure ordering by primary key for consistent pagination
+            self.queryset = self.queryset.order_by('pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(self.queryset, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                page = paginator.page(page_number)
+            except PageNotAnInteger:
+                page = paginator.page(1)
+            except EmptyPage:
+                return Response({"message": "No more records available"}, status=status.HTTP_200_OK)
+
+            paginated_businesses = page.object_list
+            paginated_serializer = self.get_serializer(paginated_businesses, many=True)
+
+            # Get total count of records
+            total_records = paginator.count
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_200_OK,
-                "message": "All Businesses",
-                "data": serializer.data,
+                "total_records": total_records,
+                "start_index": start_index,
+                "limit": limit,
+                "message": f"Businesses starting from index {start_index}",
+                "data": paginated_serializer.data,
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
@@ -692,13 +742,38 @@ class ClientDetailsAPI(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            client = Clientdetails.objects.all()
-            serializer = self.get_serializer(client, many=True)
+            # Extract starting index from the request query parameters
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Number of records per page
+
+            # Ensure ordering by primary key for consistent pagination
+            self.queryset = self.queryset.order_by('pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(self.queryset, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                page = paginator.page(page_number)
+            except PageNotAnInteger:
+                page = paginator.page(1)
+            except EmptyPage:
+                return Response({"message": "No more records available"}, status=status.HTTP_200_OK)
+
+            paginated_client = page.object_list
+            paginated_serializer = self.get_serializer(paginated_client, many=True)
+
+            # Get total count of records
+            total_records = paginator.count
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_200_OK,
-                "message": "All Client details",
-                "data": serializer.data,
+                "total_records" : total_records,
+                "start_index" : start_index,
+                "limit" : limit,
+                "message": f"Client details starting from index {start_index}",
+                "data": paginated_serializer.data,
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
@@ -983,17 +1058,42 @@ class EstimatedetailAPI(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            estimate = Estimatedetails.objects.all()
-            serializer = self.get_serializer(estimate, many=True)
+            # Extract starting index from the request query parameters
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Number of records per page
+
+            # Ensure ordering by primary key for consistent pagination
+            self.queryset = self.queryset.order_by('pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(self.queryset, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                page = paginator.page(page_number)
+            except PageNotAnInteger:
+                page = paginator.page(1)
+            except EmptyPage:
+                return Response({"message": "No more records available"}, status=status.HTTP_200_OK)
+
+            paginated_estimates = page.object_list
+            paginated_serializer = self.get_serializer(paginated_estimates, many=True)
+
+            # Get total count of records
+            total_records = paginator.count
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_200_OK,
-                "message": "All Estimates",
-                "data": serializer.data,
+                "total_records": total_records,
+                "start_index": start_index,
+                "limit": limit,
+                "message": f"Estimates starting from index {start_index}",
+                "data": paginated_serializer.data,
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
-            error_message = "An error occurred while fetching all estimates: {}".format(
+            error_message = "An error occurred while fetching paginated estimates: {}".format(
                 str(e)
             )
             error_response = {
@@ -1397,13 +1497,38 @@ class TransactionAPI(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            transaction = Transactiondetails.objects.all()
-            serializer = self.get_serializer(transaction, many=True)
+            # Extract starting index from the request query parameters
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Number of records per page
+
+            # Ensure ordering by primary key for consistent pagination
+            self.queryset = self.queryset.order_by('pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(self.queryset, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                page = paginator.page(page_number)
+            except PageNotAnInteger:
+                page = paginator.page(1)
+            except EmptyPage:
+                return Response({"message": "No more records available"}, status=status.HTTP_200_OK)
+
+            paginated_transaction = page.object_list
+            paginated_serializer = self.get_serializer(paginated_transaction, many=True)
+
+            # Get total count of records
+            total_records = paginator.count
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_200_OK,
-                "message": "All Transactions",
-                "data": serializer.data,
+                "total_records": total_records,
+                "start_index": start_index,
+                "limit": limit,
+                "message": f"Transactions starting from index {start_index}",
+                "data": paginated_serializer.data,
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
@@ -1549,13 +1674,38 @@ class UserdetailAPI(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            user = Userdetails.objects.all()
-            serializer = self.get_serializer(user, many=True)
+            # Extract starting index from the request query parameters
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Number of records per page
+            
+            # Ensure ordering by primary key for consistent pagination
+            self.queryset = self.queryset.order_by('pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(self.queryset, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                page = paginator.page(page_number)
+            except PageNotAnInteger:
+                page = paginator.page(1)
+            except EmptyPage:
+                return Response({"message": "No more records available"}, status=status.HTTP_200_OK)
+
+            paginated_user = page.object_list
+            paginated_serializer = self.get_serializer(paginated_user, many=True)
+
+            # Get total count of records
+            total_records = paginator.count
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_200_OK,
-                "message": "All Users",
-                "data": serializer.data,
+                "total_records": total_records,
+                "start_index": start_index,
+                "limit": limit,
+                "message": f"Users starting from index {start_index}",
+                "data": paginated_serializer.data,
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
@@ -1843,8 +1993,12 @@ class GetUserDetails(generics.ListAPIView):
         android_id = self.kwargs.get("androidid")
 
         queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid=android_id)
+        # if (queryset.exists()):
+        #     return queryset
+        # else:
+        #     queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid="NewUser")
         return queryset
-
+        
     def get(self, request, *args, **kwargs):
         mobile_no = self.kwargs.get("mobileno")
         android_id = self.kwargs.get("androidid")
