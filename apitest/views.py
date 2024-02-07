@@ -457,17 +457,6 @@ class BusinessDetailsAPI(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            contact_no = request.data.get('contactno')
-            # Check if contactno already exists in Businessdetails
-            existing_business = Businessdetails.objects.filter(contactno=contact_no).exists()
-            if existing_business:
-                error_response = {
-                    "status": "error",
-                    "code": status.HTTP_400_BAD_REQUEST,
-                    "message": f"Business with contactno {contact_no} already exists",
-                }
-                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
             last_business = Businessdetails.objects.aggregate(Max('businessid'))
             last_business_id = last_business['businessid__max']
 
@@ -1760,7 +1749,7 @@ class UserdetailAPI(ModelViewSet):
 
             if last_two_digits == 1:
                 username = business.businessname
-                mobileno = business.contactno
+                mobileno = request.data.get("mobileno")
                 userrole = 'Admin'
             else:
                 # Retrieve username, mobileno, and other required fields from the request
@@ -1993,12 +1982,8 @@ class GetUserDetails(generics.ListAPIView):
         android_id = self.kwargs.get("androidid")
 
         queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid=android_id)
-        # if (queryset.exists()):
-        #     return queryset
-        # else:
-        #     queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid="NewUser")
         return queryset
-        
+    
     def get(self, request, *args, **kwargs):
         mobile_no = self.kwargs.get("mobileno")
         android_id = self.kwargs.get("androidid")
@@ -2090,23 +2075,50 @@ class AdminHomeAPI(generics.ListAPIView):
         return date_records
 
 
-# API based on subscription for Admin
+# API based on businessid in descending order for Admin
 class AdminHomeAPI2(generics.ListAPIView):
     serializer_class = BusinessdetailSerializer
 
     def get_queryset(self):
-        return Businessdetails.objects.order_by('-subscriptiondate')  # for descending order
+        return Businessdetails.objects.order_by('-businessid')  # for descending order
         # return Businessdetails.objects.order_by('subscriptiondate') # for ascending order
 
     def list(self, request, *args, **kwargs):
         try:
-            queryset = self.get_queryset()
-            serializer = self.serializer_class(queryset, many=True)
+            # Extract starting index from the request query parameters
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Number of records per page
+
+            queryset = self.get_queryset()  # Get the queryset with correct ordering
+
+            # Ensure ordering by primary key for consistent pagination
+            queryset = queryset.order_by('-pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(queryset, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                page = paginator.page(page_number)
+            except PageNotAnInteger:
+                page = paginator.page(1)
+            except EmptyPage:
+                return Response({"message": "No more records available"}, status=status.HTTP_200_OK)
+
+            paginated_home = page.object_list
+            paginated_serializer = self.get_serializer(paginated_home, many=True)
+
+            # Get total count of records
+            total_records = paginator.count
+            
             response_data = {
                 'status': 'success',
                 'code': status.HTTP_200_OK,
-                'messege': 'Business Details based on subscription date',
-                'data': serializer.data
+                'total_records': total_records,
+                'start_index': start_index,
+                'limit': limit,
+                'message': 'Business Details',
+                'data': paginated_serializer.data
             }
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -2118,6 +2130,7 @@ class AdminHomeAPI2(generics.ListAPIView):
                 'data': None
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 # API for Admin login
