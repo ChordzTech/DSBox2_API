@@ -2277,30 +2277,64 @@ class SubscriptionforBusiness(generics.ListAPIView):
                 '-transactiondate').first()
 
             if not latest_transaction:
-                return Response({
-                    'status': 'success',
-                    'code': 200,
-                    'message': f'No transactions found for business ID {business_id}',
-                    'data': []
-                })
+                # If no transaction found, fetch activation date for the business_id
+                activation_date = Businessdetails.objects.filter(businessid=business_id).values_list('activationdate', flat=True).first()
+                if activation_date:
+                    # If activation date exists, add 4 days to it for trial period
+                    trial_end_date = activation_date + timedelta(days=4)
+                    remaining_days = max((trial_end_date - current_date).days, 0)
+                    status = 'Trial' if remaining_days > 0 else 'Expired'
 
-            # Calculate end date and remaining days for the latest transaction
+                    # Update status in both Userdetails and Businessdetails
+                    Userdetails.objects.filter(businessid=business_id).update(status=status)
+                    Businessdetails.objects.filter(businessid=business_id).update(status=status)
+
+                    # Create the response dictionary for trial period
+                    response_data = {
+                        'status': 'success',
+                        'code': 200,
+                        'message': f'Trial subscription for business ID {business_id}',
+                        'data': [{
+                            'subscription_date': activation_date,
+                            'end_date': trial_end_date.strftime("%Y-%m-%d"),
+                            'remaining_days': remaining_days,
+                            'status': status
+                        }]
+                    }
+                    return Response(response_data)
+
+                else:
+                    return Response({
+                        'status': 'fail',
+                        'code': 400,
+                        'message': f'No transactions found and activation date not available for business ID {business_id}',
+                        'data': []
+                    })
+
+            # If there are transactions, proceed with the existing logic
             end_date = latest_transaction.transactiondate + timedelta(days=latest_transaction.duration)
             remaining_days = max((end_date - current_date).days, 0)
 
-            status = 'Trial' if remaining_days <= 0 else 'Active'
+            status = 'Expired' if remaining_days == 0 else ('Trial' if remaining_days <= 4 else 'Active')
+
 
             # Check if remaining_days is 0 and update 'useraccess' for all users under the businessid
             if remaining_days == 0:
-                # Update 'useraccess' for all users under the specified businessid
-                Userdetails.objects.filter(businessid=business_id).update(useraccess=1)
+                # Update 'useraccess' & 'status' for all users under the specified businessid
+                Userdetails.objects.filter(businessid=business_id).update(useraccess=1, status='Expired')
+                Businessdetails.objects.filter(businessid=business_id).update(status='Expired')
 
-            # Create the response dictionary with details from the latest transaction
+            else:
+                # Update status in both Userdetails and Businessdetails
+                Userdetails.objects.filter(businessid=business_id).update(status=status)
+                Businessdetails.objects.filter(businessid=business_id).update(status=status)
+
             response_data = {
                 'status': 'success',
                 'code': 200,
                 'message': f'Subscription details for business ID {business_id}',
                 'data': [{
+                    'subscription_date': latest_transaction.transactiondate,
                     'end_date': end_date.strftime("%Y-%m-%d"),
                     'remaining_days': remaining_days,
                     'status': status
@@ -2310,10 +2344,10 @@ class SubscriptionforBusiness(generics.ListAPIView):
             return Response(response_data)
 
         except Exception as e:
-            # Handle other potential exceptions
             return Response({
                 'status': 'error',
                 'code': 500,
                 'message': 'An error occurred',
                 'data': str(e)
             })
+
