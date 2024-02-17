@@ -1735,6 +1735,29 @@ class UserdetailAPI(ModelViewSet):
             business_id = request.data.get("businessid")
             mobile_no = request.data.get("mobileno")
 
+            existing_user = Userdetails.objects.filter(mobileno=mobile_no).first()
+
+            if existing_user:
+                existing_user_data = {
+                        "businessid": existing_user.businessid,
+                        "userid": existing_user.userid,
+                        "userpassword": existing_user.userpassword,
+                        "username": existing_user.username,
+                        "mobileno": existing_user.mobileno,
+                        "userrole": existing_user.userrole,
+                        "useraccess": existing_user.useraccess,
+                        "androidid": existing_user.androidid,
+                        "deviceinfo": existing_user.deviceinfo,
+                        "status": existing_user.status,
+                    }
+                api_response = {
+                    "status": "error",
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Mobile number already exists",
+                    "existing_user_data": existing_user_data,
+                }
+                return Response(api_response)
+
             existing_users = Userdetails.objects.filter(businessid=business_id)
             max_user_id = existing_users.aggregate(Max('userid'))['userid__max']
 
@@ -1757,14 +1780,6 @@ class UserdetailAPI(ModelViewSet):
                 mobileno = request.data.get("mobileno")
                 userrole = 'User'
 
-            if Userdetails.objects.filter(mobileno=mobile_no).exists():
-                api_response = {
-                    "status": "error",
-                    "code": status.HTTP_400_BAD_REQUEST,
-                    "message": "Mobile number already exists",
-                }
-                return Response(api_response)
-
             user_data = {
                 'userid': new_user_id,
                 'businessid': business_id,
@@ -1775,7 +1790,7 @@ class UserdetailAPI(ModelViewSet):
                 'useraccess': 2,
                 'androidid': request.data.get("androidid"),  # Get androidid from request
                 'deviceinfo': request.data.get("deviceinfo"),  # Get deviceinfo from request
-                'status': 'Active'
+                'status': business.status,
             }
 
             serializer = self.get_serializer(data=user_data)
@@ -1783,11 +1798,11 @@ class UserdetailAPI(ModelViewSet):
             serializer.save()
 
             api_response = {
-                "status": "success",
-                "code": status.HTTP_201_CREATED,
-                "message": "User added successfully",
-                "data": serializer.data,
-            }
+                    "status": "success",
+                    "code": status.HTTP_201_CREATED,
+                    "message": "User added successfully",
+                    "data": serializer.data,
+                }
             return Response(api_response, status=status.HTTP_201_CREATED)
         except Exception as e:
             error_message = "Failed to add user: {}".format(str(e))
@@ -1979,14 +1994,14 @@ class GetUserDetails(generics.ListAPIView):
 
     def get_queryset(self):
         mobile_no = self.kwargs.get("mobileno")
-        android_id = self.kwargs.get("androidid")
+        # android_id = self.kwargs.get("androidid")
 
-        queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid=android_id)
+        queryset = Userdetails.objects.filter(mobileno=mobile_no)
         return queryset
     
     def get(self, request, *args, **kwargs):
         mobile_no = self.kwargs.get("mobileno")
-        android_id = self.kwargs.get("androidid")
+        # android_id = self.kwargs.get("androidid")
 
         queryset = self.get_queryset()
 
@@ -1995,7 +2010,7 @@ class GetUserDetails(generics.ListAPIView):
             data = {
                 'status': 'success',
                 'code': status.HTTP_200_OK,
-                'message': f'Record under {mobile_no} and {android_id}',
+                'message': f'Record under {mobile_no}',
                 'data': serializer.data
             }
             return Response(data, status=status.HTTP_200_OK)
@@ -2003,7 +2018,7 @@ class GetUserDetails(generics.ListAPIView):
         data = {
             'status': 'error',
             'code': status.HTTP_404_NOT_FOUND,
-            'message': f'No record for {mobile_no} and {android_id}',
+            'message': f'No record for {mobile_no}',
             'data': []
         }
         return Response(data, status=status.HTTP_404_NOT_FOUND)
@@ -2130,7 +2145,6 @@ class AdminHomeAPI2(generics.ListAPIView):
                 'data': None
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 
 # API for Admin login
@@ -2350,4 +2364,3 @@ class SubscriptionforBusiness(generics.ListAPIView):
                 'message': 'An error occurred',
                 'data': str(e)
             })
-

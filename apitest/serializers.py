@@ -85,6 +85,7 @@ class UserSerializer(serializers.ModelSerializer):
 class Base64CodeSerializer(serializers.Serializer):
     base64_code = serializers.CharField()
 
+
 class AdminLoginSerializer(serializers.Serializer):
     adminname = serializers.CharField(required=True)
     adminpassword = serializers.CharField(required=True)
