@@ -1564,6 +1564,7 @@ class TransactionAPI(ModelViewSet):
                 new_transaction_id = last_transaction_id + 1
 
             request.data['transactionid'] = new_transaction_id
+            request.data['status'] = 'Active'
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -1574,7 +1575,11 @@ class TransactionAPI(ModelViewSet):
 
             # Assuming 'transactiondate' and 'subscriptiondate' are fields in respective models
             business_details.subscriptiondate = transaction_instance.transactiondate
+            business_details.status = 'Active'  # Updating status to 'Active'
             business_details.save()
+
+            # Update user access for all users related to the business
+            Userdetails.objects.filter(businessid=business_id).update(useraccess=2)
 
             api_response = {
                 "status": "success",
@@ -1668,7 +1673,7 @@ class UserdetailAPI(ModelViewSet):
             limit = 50  # Number of records per page
             
             # Ensure ordering by primary key for consistent pagination
-            self.queryset = self.queryset.order_by('pk')
+            self.queryset = self.queryset.order_by('-pk')
 
             # Use Django Paginator to get the subset of records
             paginator = Paginator(self.queryset, limit)
@@ -2005,23 +2010,33 @@ class GetUserDetails(generics.ListAPIView):
 
         queryset = self.get_queryset()
 
-        serializer = self.get_serializer(queryset, many=True)
         if queryset.exists():
+            user = queryset.first()  # Assuming there's only one user with this mobile number
+            serializer = self.get_serializer(queryset, many=True)
+            if user.useraccess == 3:
+                data = {
+                    'status': 'error',
+                    'code': status.HTTP_200_OK,
+                    'message': 'User had been blocked!! Please contact to admin.',
+                    'data': serializer.data
+                }
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                data = {
+                    'status': 'success',
+                    'code': status.HTTP_200_OK,
+                    'message': f'Record under {mobile_no}',
+                    'data': serializer.data
+                }
+                return Response(data, status=status.HTTP_200_OK)
+        else:
             data = {
-                'status': 'success',
-                'code': status.HTTP_200_OK,
-                'message': f'Record under {mobile_no}',
-                'data': serializer.data
+                'status': 'error',
+                'code': status.HTTP_404_NOT_FOUND,
+                'message': f'No record for {mobile_no}',
+                'data': []
             }
-            return Response(data, status=status.HTTP_200_OK)
-
-        data = {
-            'status': 'error',
-            'code': status.HTTP_404_NOT_FOUND,
-            'message': f'No record for {mobile_no}',
-            'data': []
-        }
-        return Response(data, status=status.HTTP_404_NOT_FOUND)
+            return Response(data, status=status.HTTP_404_NOT_FOUND)
 
 
 # API for Admin home page
@@ -2334,14 +2349,10 @@ class SubscriptionforBusiness(generics.ListAPIView):
 
             # Check if remaining_days is 0 and update 'useraccess' for all users under the businessid
             if remaining_days == 0:
-                # Update 'useraccess' & 'status' for all users under the specified businessid
-                Userdetails.objects.filter(businessid=business_id).update(useraccess=1, status='Expired')
-                Businessdetails.objects.filter(businessid=business_id).update(status='Expired')
+                Userdetails.objects.filter(businessid=business_id, useraccess__lt=3).update(useraccess=1, status='Expired')
 
             else:
-                # Update status in both Userdetails and Businessdetails
-                Userdetails.objects.filter(businessid=business_id).update(status=status)
-                Businessdetails.objects.filter(businessid=business_id).update(status=status)
+                Userdetails.objects.filter(businessid=business_id, useraccess__lt=3).update(status=status)
 
             response_data = {
                 'status': 'success',
