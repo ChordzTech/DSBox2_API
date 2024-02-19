@@ -1,14 +1,14 @@
 import os
 from datetime import datetime, timedelta
 from django.conf import settings
-from django.db.models import Max, Count
+from django.db.models import Max, Count, Q
 from django.contrib.auth.hashers import make_password, check_password
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import (
     Administrators,
     Appconfig,
@@ -425,6 +425,60 @@ class BusinessDetailsAPI(ModelViewSet):
         except Exception as e:
             error_message = (
                 "An error occurred while fetching businesses: {}".format(str(e))
+            )
+            error_response = {
+                "status": "error",
+                "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "message": error_message,
+            }
+            return Response(
+                error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+    def search(self, request, *args, **kwargs):
+        try:
+            search_term = request.query_params.get('search_term')
+            if not search_term:
+                return Response({"message": "Please provide a search term"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Perform case-insensitive search by name or mobile number
+            search_results = Businessdetails.objects.filter(
+                Q(businessname__icontains=search_term) | Q(contactno__icontains=search_term)
+            )
+
+            # Extract start index and limit from the request query parameters
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Default limit is 50
+
+            # Ensure ordering by primary key for consistent pagination
+            search_results = search_results.order_by('pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(search_results, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                paginated_search_results = paginator.page(page_number)
+            except PageNotAnInteger:
+                paginated_search_results = paginator.page(1)
+            except EmptyPage:
+                return Response({"message": "No more records available"}, status=status.HTTP_200_OK)
+
+            serializer = self.get_serializer(paginated_search_results, many=True)
+
+            api_response = {
+                "status": "success",
+                "code": status.HTTP_200_OK,
+                "message": f"Search results for '{search_term}'",
+                "start_index": start_index,
+                "limit": limit,
+                "total_records": paginator.count,
+                "data": serializer.data,
+            }
+            return Response(api_response, status=status.HTTP_200_OK)
+        except Exception as e:
+            error_message = (
+                "An error occurred while searching businesses: {}".format(str(e))
             )
             error_response = {
                 "status": "error",
@@ -1705,6 +1759,60 @@ class UserdetailAPI(ModelViewSet):
         except Exception as e:
             error_message = "An error occurred while fetching all users: {}".format(
                 str(e)
+            )
+            error_response = {
+                "status": "error",
+                "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "message": error_message,
+            }
+            return Response(
+                error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+    def search(self, request, *args, **kwargs):
+        try:
+            search_term = request.query_params.get('search_term')
+            if not search_term:
+                return Response({"message": "Please provide a search term"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Perform case-insensitive search by name or mobile number
+            search_results = Userdetails.objects.filter(
+                Q(username__icontains=search_term) | Q(mobileno__icontains=search_term)
+            )
+
+            # Extract start index and limit from the request query parameters
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Default limit is 50
+
+            # Ensure ordering by primary key for consistent pagination
+            search_results = search_results.order_by('pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(search_results, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                paginated_search_results = paginator.page(page_number)
+            except PageNotAnInteger:
+                paginated_search_results = paginator.page(1)
+            except EmptyPage:
+                return Response({"message": "No more records available"}, status=status.HTTP_200_OK)
+
+            serializer = self.get_serializer(paginated_search_results, many=True)
+
+            api_response = {
+                "status": "success",
+                "code": status.HTTP_200_OK,
+                "message": f"Search results for '{search_term}'",
+                "start_index": start_index,
+                "limit": limit,
+                "total_records": paginator.count,
+                "data": serializer.data,
+            }
+            return Response(api_response, status=status.HTTP_200_OK)
+        except Exception as e:
+            error_message = (
+                "An error occurred while searching user: {}".format(str(e))
             )
             error_response = {
                 "status": "error",
