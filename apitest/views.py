@@ -1624,11 +1624,12 @@ class TransactionAPI(ModelViewSet):
             serializer.is_valid(raise_exception=True)
             transaction_instance = serializer.save()
 
-            business_id = transaction_instance.businessid
+            transaction = Transactiondetails.objects.get(businessid=business_id)
+            business_id = transaction.businessid
             business_details = Businessdetails.objects.get(businessid=business_id)
 
             # Assuming 'transactiondate' and 'subscriptiondate' are fields in respective models
-            business_details.subscriptiondate = transaction_instance.transactiondate
+            business_details.subscriptiondate = transaction.transactiondate
             business_details.status = 'Active'  # Updating status to 'Active'
             business_details.save()
 
@@ -1962,6 +1963,7 @@ class UserdetailAPI(ModelViewSet):
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
+
             api_response = {
                 "status": "success",
                 "code": status.HTTP_200_OK,
@@ -1998,7 +2000,7 @@ class UserdetailAPI(ModelViewSet):
             return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
 
 
-# API for Client List by ClientID, BusinessID
+# API for Client List by BusinessID
 class GetClientByB(generics.ListAPIView):
     serializer_class = ClientdetailSerializer
 
@@ -2009,12 +2011,31 @@ class GetClientByB(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         business_id = self.kwargs["businessid"]
         queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
+
+        # Pagination
+        start_index = int(request.query_params.get('start_index', 0))
+        limit = 50  # Default limit is 50
+
+        paginator = Paginator(queryset, limit)
+        page_number = (start_index // limit) + 1
+
+        try:
+            paginated_queryset = paginator.page(page_number)
+        except PageNotAnInteger:
+            paginated_queryset = paginator.page(1)
+        except EmptyPage:
+            paginated_queryset = paginator.page(paginator.num_pages)
+
+        serializer = self.get_serializer(paginated_queryset, many=True)
+
         if queryset.exists():
             data = {
                 'status': 'success',
                 'code': status.HTTP_200_OK,
                 'message': f'Client list under {business_id}',
+                'start_index': start_index,
+                'limit': limit,
+                'total_records': paginator.count,
                 'data': serializer.data
             }
             return Response(data, status=status.HTTP_200_OK)
@@ -2038,11 +2059,11 @@ class GetEstimatesByUB(generics.ListAPIView):
         queryset = Userdetails.objects.filter(businessid=business_id, userid=user_id)
         return queryset
 
-    def get(self, request, *args, **kwargs):
-        business_id = self.kwargs.get("businessid")
-        user_id = self.kwargs.get("userid")
-
+    def list(self, request, *args, **kwargs):
         try:
+            business_id = self.kwargs.get("businessid")
+            user_id = self.kwargs.get("userid")
+
             user = Userdetails.objects.get(userid=user_id)
 
             if user.userrole == "Admin":
@@ -2052,11 +2073,29 @@ class GetEstimatesByUB(generics.ListAPIView):
             else:
                 return Response({'status': 'error', 'message': 'Invalid user role'}, status=status.HTTP_400_BAD_REQUEST)
 
-            serializer = self.get_serializer(queryset, many=True)
+            # Pagination
+            start_index = int(request.query_params.get('start_index', 0))
+            limit = 50  # Default limit is 50
+
+            paginator = Paginator(queryset, limit)
+            page_number = (start_index // limit) + 1
+
+            try:
+                paginated_queryset = paginator.page(page_number)
+            except PageNotAnInteger:
+                paginated_queryset = paginator.page(1)
+            except EmptyPage:
+                paginated_queryset = paginator.page(paginator.num_pages)
+
+            serializer = self.get_serializer(paginated_queryset, many=True)
+
             data = {
                 'status': 'success',
                 'code': status.HTTP_200_OK,
                 'message': f'Estimates for {business_id} by user {user_id}',
+                'start_index': start_index,
+                'limit': limit,
+                'total_records': paginator.count,
                 'data': serializer.data
             }
             return Response(data, status=status.HTTP_200_OK)
@@ -2107,42 +2146,48 @@ class GetUserDetails(generics.ListAPIView):
 
     def get_queryset(self):
         mobile_no = self.kwargs.get("mobileno")
-        # android_id = self.kwargs.get("androidid")
-
-        queryset = Userdetails.objects.filter(mobileno=mobile_no)
+        android_id = self.kwargs.get("androidid")
+        queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid=android_id)
         return queryset
     
     def get(self, request, *args, **kwargs):
         mobile_no = self.kwargs.get("mobileno")
-        # android_id = self.kwargs.get("androidid")
-
+        android_id = self.kwargs.get("androidid")
+        
         queryset = self.get_queryset()
 
         if queryset.exists():
-            user = queryset.first()  # Assuming there's only one user with this mobile number
-            serializer = self.get_serializer(queryset, many=True)
+            user = queryset.first()
             if user.useraccess == 3:
                 data = {
                     'status': 'error',
                     'code': status.HTTP_200_OK,
-                    'message': 'User had been blocked!! Please contact to admin.',
-                    'data': serializer.data
+                    'message': 'User has been blocked!!! Please contact admin.',
                 }
                 return Response(data, status=status.HTTP_200_OK)
+            
+            elif user.androidid == "NewUser":
+                data = {
+                    'status': 'success',
+                    'code': status.HTTP_200_OK,
+                    'message': 'Your device has changed so you need to update your androidID',
+                    'data': UserSerializer(user).data,
+                }
+                return Response(data, status=status.HTTP_200_OK)
+
             else:
                 data = {
                     'status': 'success',
                     'code': status.HTTP_200_OK,
-                    'message': f'Record under {mobile_no}',
-                    'data': serializer.data
+                    'message': f'Record found for {mobile_no} and {android_id}',
+                    'data': UserSerializer(user).data
                 }
                 return Response(data, status=status.HTTP_200_OK)
         else:
             data = {
                 'status': 'error',
                 'code': status.HTTP_404_NOT_FOUND,
-                'message': f'No record for {mobile_no}',
-                'data': []
+                'message': f'No record found for {mobile_no} and {android_id}',
             }
             return Response(data, status=status.HTTP_404_NOT_FOUND)
 
