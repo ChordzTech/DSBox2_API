@@ -2171,7 +2171,7 @@ class GetUserDetails(generics.ListAPIView):
                     'status': 'success',
                     'code': status.HTTP_200_OK,
                     'message': 'Your device has changed so you need to update your androidID',
-                    'data': UserSerializer(user).data,
+                    'data': [UserSerializer(user).data],  # Wrap data in a list
                 }
                 return Response(data, status=status.HTTP_200_OK)
 
@@ -2180,16 +2180,27 @@ class GetUserDetails(generics.ListAPIView):
                     'status': 'success',
                     'code': status.HTTP_200_OK,
                     'message': f'Record found for {mobile_no} and {android_id}',
-                    'data': UserSerializer(user).data
+                    'data': [UserSerializer(user).data]  # Wrap data in a list
                 }
                 return Response(data, status=status.HTTP_200_OK)
         else:
-            data = {
-                'status': 'error',
-                'code': status.HTTP_404_NOT_FOUND,
-                'message': f'No record found for {mobile_no} and {android_id}',
-            }
-            return Response(data, status=status.HTTP_404_NOT_FOUND)
+            # If no record found with both mobileno and androidid, check with mobileno only
+            queryset = Userdetails.objects.filter(mobileno=mobile_no)
+            if queryset.exists():
+                data = {
+                    'status': 'success',
+                    'code': status.HTTP_200_OK,
+                    'message': 'Your device has changed so you need to update your androidID',
+                    'data': [UserSerializer(user).data for user in queryset]
+                }
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                data = {
+                    'status': 'error',
+                    'code': status.HTTP_404_NOT_FOUND,
+                    'message': f'No record found for {mobile_no} and {android_id}',
+                }
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
 
 
 # API for Admin home page
