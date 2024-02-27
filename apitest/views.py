@@ -2147,7 +2147,26 @@ class GetUserDetails(generics.ListAPIView):
     def get_queryset(self):
         mobile_no = self.kwargs.get("mobileno")
         android_id = self.kwargs.get("androidid")
+        
+        try:
+            # Fetching the user details based on mobileno or androidid
+            user_detail = Userdetails.objects.filter(Q(mobileno=mobile_no) | Q(androidid=android_id)).first()
+            if user_detail:
+                user_id = user_detail.userid
+                business_id = user_detail.businessid
+            else:
+                user_id = None
+                business_id = None
+        except Userdetails.DoesNotExist:
+            user_id = None
+            business_id = None
+        
         queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid=android_id)
+        
+        # Check if mobileno and androidid belong to the same userid
+        if user_id:
+            queryset = queryset.filter(userid=user_id)
+        
         return queryset
     
     def get(self, request, *args, **kwargs):
@@ -2165,16 +2184,6 @@ class GetUserDetails(generics.ListAPIView):
                     'message': 'User has been blocked!!! Please contact admin.',
                 }
                 return Response(data, status=status.HTTP_200_OK)
-            
-            elif user.androidid == "NewUser":
-                data = {
-                    'status': 'success',
-                    'code': status.HTTP_200_OK,
-                    'message': 'Your device has changed so you need to update your androidID',
-                    'data': [UserSerializer(user).data],  # Wrap data in a list
-                }
-                return Response(data, status=status.HTTP_200_OK)
-
             else:
                 data = {
                     'status': 'success',
@@ -2187,13 +2196,25 @@ class GetUserDetails(generics.ListAPIView):
             # If no record found with both mobileno and androidid, check with mobileno only
             queryset = Userdetails.objects.filter(mobileno=mobile_no)
             if queryset.exists():
-                data = {
-                    'status': 'success',
-                    'code': status.HTTP_200_OK,
-                    'message': 'Your device has changed so you need to update your androidID',
-                    'data': [UserSerializer(user).data for user in queryset]
-                }
-                return Response(data, status=status.HTTP_200_OK)
+                # Check if mobileno and androidid belong to the same userid
+                user_details = queryset.first()
+                if user_details.androidid != "NewUser":
+                    # Mobileno and androidid belong to different userid
+                    data = {
+                        'status': 'error',
+                        'code': status.HTTP_400_BAD_REQUEST,
+                        'message': 'Your mobileno or android belongs to another business',
+                        'data': [UserSerializer(user_detail).data for user_detail in queryset]
+                    }
+                    return Response(data, status=status.HTTP_400_BAD_REQUEST)
+                elif user_details.androidid == "NewUser":
+                    data = {
+                        'status': 'success',
+                        'code': status.HTTP_200_OK,
+                        'message': 'Your device has changed so you need to update your androidID',
+                        'data': [UserSerializer(user_detail).data for user_detail in queryset]
+                    }
+                    return Response(data, status=status.HTTP_200_OK)
             else:
                 data = {
                     'status': 'error',
