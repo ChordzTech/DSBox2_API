@@ -1941,7 +1941,7 @@ class UserdetailAPI(ModelViewSet):
                 "status": "success",
                 "code": status.HTTP_200_OK,
                 "message": "User updated successfully",
-                "data": serializer.data,
+                "data": [serializer.data],
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
@@ -1968,7 +1968,7 @@ class UserdetailAPI(ModelViewSet):
                 "status": "success",
                 "code": status.HTTP_200_OK,
                 "message": "User partially updated successfully",
-                "data": serializer.data,
+                "data": [serializer.data],
             }
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
