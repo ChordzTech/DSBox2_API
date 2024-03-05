@@ -1624,12 +1624,12 @@ class TransactionAPI(ModelViewSet):
             serializer.is_valid(raise_exception=True)
             transaction_instance = serializer.save()
 
-            transaction = Transactiondetails.objects.get(businessid=business_id)
-            business_id = transaction.businessid
+            business_id = transaction_instance.businessid
+            transaction = Transactiondetails.objects.filter(businessid=business_id)
             business_details = Businessdetails.objects.get(businessid=business_id)
 
             # Assuming 'transactiondate' and 'subscriptiondate' are fields in respective models
-            business_details.subscriptiondate = transaction.transactiondate
+            business_details.subscriptiondate = transaction_instance.transactiondate
             business_details.status = 'Active'  # Updating status to 'Active'
             business_details.save()
 
