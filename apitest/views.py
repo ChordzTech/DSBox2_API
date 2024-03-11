@@ -1,4 +1,5 @@
 import os
+import math
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.db.models import Max, Count, Q
@@ -2014,7 +2015,15 @@ class GetClientByB(generics.ListAPIView):
 
         # Pagination
         start_index = int(request.query_params.get('start_index', 0))
-        limit = 50  # Default limit is 50
+        limit = 50
+
+        total_records = queryset.count()
+
+        if start_index >= total_records:
+            return Response({'status': 'success', 'code': status.HTTP_200_OK,
+                             'message': f'No more clients available for business {business_id}',
+                             'start_index': start_index, 'limit': limit,
+                             'total_records': total_records, 'data': []})
 
         paginator = Paginator(queryset, limit)
         page_number = (start_index // limit) + 1
@@ -2028,25 +2037,16 @@ class GetClientByB(generics.ListAPIView):
 
         serializer = self.get_serializer(paginated_queryset, many=True)
 
-        if queryset.exists():
-            data = {
-                'status': 'success',
-                'code': status.HTTP_200_OK,
-                'message': f'Client list under {business_id}',
-                'start_index': start_index,
-                'limit': limit,
-                'total_records': paginator.count,
-                'data': serializer.data
-            }
-            return Response(data, status=status.HTTP_200_OK)
-        else:
-            data = {
-                'status': 'failure',
-                'code': status.HTTP_404_NOT_FOUND,
-                'message': f'Client not found',
-                'data': []
-            }
-            return Response(data, status=status.HTTP_404_NOT_FOUND)
+        data = {
+            'status': 'success',
+            'code': status.HTTP_200_OK,
+            'message': f'Client list under {business_id}',
+            'start_index': start_index,
+            'limit': limit,
+            'total_records': total_records,
+            'data': serializer.data
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 
 # API for Estimates by UserID and BusinessID
@@ -2073,12 +2073,22 @@ class GetEstimatesByUB(generics.ListAPIView):
             else:
                 return Response({'status': 'error', 'message': 'Invalid user role'}, status=status.HTTP_400_BAD_REQUEST)
 
+            total_records = queryset.count()
+
             # Pagination
             start_index = int(request.query_params.get('start_index', 0))
-            limit = 50  # Default limit is 50
+            limit = int(request.query_params.get('limit', 50))
+
+            if start_index > total_records:
+                return Response({'status': 'success', 'code': status.HTTP_200_OK,
+                                'message': 'No more records available',
+                                'start_index': start_index, 'limit': limit,
+                                'total_records': total_records, 'data': []})
+
+            queryset = queryset.order_by('-pk')  # Orders by pk field in descending order
 
             paginator = Paginator(queryset, limit)
-            page_number = (start_index // limit) + 1
+            page_number = math.ceil((start_index + 1) / limit)  # Calculate correct page number
 
             try:
                 paginated_queryset = paginator.page(page_number)
@@ -2095,7 +2105,7 @@ class GetEstimatesByUB(generics.ListAPIView):
                 'message': f'Estimates for {business_id} by user {user_id}',
                 'start_index': start_index,
                 'limit': limit,
-                'total_records': paginator.count,
+                'total_records': total_records,
                 'data': serializer.data
             }
             return Response(data, status=status.HTTP_200_OK)
@@ -2116,10 +2126,12 @@ class GetEstimatesByClient(generics.ListAPIView):
 
     def get_queryset(self):
         client_id = self.kwargs["clientid"]
-        return Estimatedetails.objects.filter(clientid=client_id)
+        user_id = self.kwargs["userid"]
+        return Estimatedetails.objects.filter(clientid=client_id, userid=user_id)
 
     def list(self, request, *args, **kwargs):
         client_id = self.kwargs["clientid"]
+        user_id = self.kwargs["userid"]
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         if queryset.exists():
