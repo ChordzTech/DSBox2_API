@@ -937,11 +937,11 @@ class ClientDetailsAPI(ModelViewSet):
             if Estimatedetails.objects.filter(clientid=instance.clientid).exists():
                 error_message = "Client has estimates so it cant be deleted"
                 error_response = {
-                    "status": "success",
-                    "code": status.HTTP_400_BAD_REQUEST,
+                    "status": "error",
+                    "code": status.HTTP_200_OK,
                     "message": error_message,
                 }
-                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+                return Response(error_response, status=status.HTTP_200_OK)
 
             # If no associated records found, proceed with deletion
             instance.delete()
