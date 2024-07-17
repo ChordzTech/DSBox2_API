@@ -2171,32 +2171,27 @@ class GetUserDetails(generics.ListAPIView):
     def get_queryset(self):
         mobile_no = self.kwargs.get("mobileno")
         android_id = self.kwargs.get("androidid")
-        
+
         try:
-            # Fetching the user details based on mobileno or androidid
             user_detail = Userdetails.objects.filter(Q(mobileno=mobile_no) | Q(androidid=android_id)).first()
             if user_detail:
                 user_id = user_detail.userid
-                business_id = user_detail.businessid
             else:
                 user_id = None
-                business_id = None
         except Userdetails.DoesNotExist:
             user_id = None
-            business_id = None
-        
+
         queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid=android_id)
-        
-        # Check if mobileno and androidid belong to the same userid
+
         if user_id:
             queryset = queryset.filter(userid=user_id)
-        
+
         return queryset
-    
+
     def get(self, request, *args, **kwargs):
         mobile_no = self.kwargs.get("mobileno")
         android_id = self.kwargs.get("androidid")
-        
+
         queryset = self.get_queryset()
 
         if queryset.exists():
@@ -2213,17 +2208,14 @@ class GetUserDetails(generics.ListAPIView):
                     'status': 'success',
                     'code': status.HTTP_200_OK,
                     'message': f'Record found for {mobile_no} and {android_id}',
-                    'data': [UserSerializer(user).data]  # Wrap data in a list
+                    'data': [UserSerializer(user).data]
                 }
                 return Response(data, status=status.HTTP_200_OK)
         else:
-            # If no record found with both mobileno and androidid, check with mobileno only
             queryset = Userdetails.objects.filter(mobileno=mobile_no)
             if queryset.exists():
-                # Check if mobileno and androidid belong to the same userid
                 user_details = queryset.first()
                 if user_details.androidid != "NewUser":
-                    # Mobileno and androidid belong to different userid
                     data = {
                         'status': 'error',
                         'code': status.HTTP_400_BAD_REQUEST,
@@ -2240,6 +2232,19 @@ class GetUserDetails(generics.ListAPIView):
                     }
                     return Response(data, status=status.HTTP_200_OK)
             else:
+                # Check specifically for "9111111111" and "testingdevice"
+                if mobile_no == "9111111111" and android_id == "testingdevice":
+                    queryset = Userdetails.objects.filter(mobileno=mobile_no, androidid=android_id)
+                    if queryset.exists():
+                        user = queryset.first()
+                        data = {
+                            'status': 'success',
+                            'code': status.HTTP_200_OK,
+                            'message': f'Record found for {mobile_no} and {android_id}',
+                            'data': [UserSerializer(user).data]
+                        }
+                        return Response(data, status=status.HTTP_200_OK)
+                
                 data = {
                     'status': 'error',
                     'code': status.HTTP_404_NOT_FOUND,
