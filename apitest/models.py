@@ -56,6 +56,10 @@ class Businessdetails(models.Model):
           class Meta:
                     db_table = 'businessdetails'
 
+          @property
+          def estimate_count(self):
+                return Estimatedetails.objects.filter(businessid=self.businessid).count()
+
 class Businesses(models.Model):
           businessid = models.BigIntegerField(db_column='BusinessID', primary_key=True)  # Field name made lowercase.
           authkey = models.CharField(db_column='AuthKey', max_length=100, blank=True,
