@@ -25,6 +25,7 @@ from apitest.views import (
     SubscriptionforBusiness,
     TransactionAPI,
     UserdetailAPI,
+    BusinessByStatus,
 )
 
 router = routers.DefaultRouter()
@@ -51,6 +52,7 @@ urlpatterns = [
     path("api/GetSubUserList/<int:businessid>/", GetSubUserList.as_view()),
     path("api/GetUserDetails/<int:mobileno>/<str:androidid>/", GetUserDetails.as_view()),
     path("api/SubcriptionEndingSoon/", SubscriptionEndingSoon.as_view()),
+    path("api/BusinessByStatus/", BusinessByStatus.as_view()),
     path("api/SubscriptionforBusiness/<int:businessid>", SubscriptionforBusiness.as_view()),
     path("api/TransactionDetails/",
         TransactionAPI.as_view({"get": "list", "post": "create"}),

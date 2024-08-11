@@ -2589,3 +2589,101 @@ class SubscriptionforBusiness(generics.ListAPIView):
                 'message': 'An error occurred',
                 'data': str(e)
             })
+
+# API for Business by status
+class BusinessByStatus(generics.ListAPIView):
+    queryset = Businessdetails.objects.all()
+    serializer_class = BusinessdetailSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            # Extract status parameter from the request query parameters
+            status_param = request.query_params.get('status', 'All').strip().lower()
+
+            # Define allowed status values
+            allowed_statuses = ['all', 'active', 'trial', 'expired']
+
+            # Validate the status parameter
+            if status_param not in allowed_statuses:
+                error_response = {
+                    "status": "error",
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": f"Invalid status parameter: '{status_param}'. Allowed values are: All, Active, Trial, Expired."
+                }
+                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
+            # Filter the queryset based on the status parameter (if not 'All')
+            filtered_queryset = self.queryset
+            if status_param != 'all':
+                filtered_queryset = filtered_queryset.filter(status__iexact=status_param.capitalize())
+
+            # Extract starting index from the request query parameters
+            start_index_param = request.query_params.get('start_index', '0')
+            if not start_index_param.isdigit() or int(start_index_param) < 0:
+                error_response = {
+                    "status": "error",
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": f"Invalid start_index parameter: '{start_index_param}'. It must be a non-negative integer."
+                }
+                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
+            start_index = int(start_index_param)
+            limit = 50  # Number of records per page
+
+            # Ensure ordering by primary key for consistent pagination
+            ordered_queryset = filtered_queryset.order_by('pk')
+
+            # Use Django Paginator to get the subset of records
+            paginator = Paginator(ordered_queryset, limit)
+            page_number = (start_index // limit) + 1  # Calculate page number based on starting index
+
+            try:
+                page = paginator.page(page_number)
+            except PageNotAnInteger:
+                page = paginator.page(1)
+            except EmptyPage:
+                return Response(
+                    {
+                        "status": "success",
+                        "code": status.HTTP_200_OK,
+                        "message": "No more records available.",
+                        "total_records": paginator.count,
+                        "data": [],
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            paginated_business = page.object_list
+            paginated_serializer = self.get_serializer(paginated_business, many=True)
+
+            # Get total count of records after filtering
+            total_records = paginator.count
+
+            # Get count of estimates for each BusinessID
+            estimate_counts = Estimatedetails.objects.values('businessid').annotate(EstimateCount=Count('estimateid'))
+
+            # Map the estimate counts to the corresponding businesses
+            estimate_count_map = {item['businessid']: item['EstimateCount'] for item in estimate_counts}
+            for business_data in paginated_serializer.data:
+                business_id = business_data['businessid']
+                estimate_count = estimate_count_map.get(business_id, 0)
+                business_data['estimate_count'] = estimate_count
+
+            api_response = {
+                "status": "success",
+                "code": status.HTTP_200_OK,
+                "total_records": total_records,
+                "start_index": start_index,
+                "limit": limit,
+                "message": f"Businessdetails starting from index {start_index} with status '{status_param.capitalize()}'",
+                "data": paginated_serializer.data,
+            }
+            return Response(api_response, status=status.HTTP_200_OK)
+        except Exception as e:
+            error_message = f"An error occurred while fetching businesses: {str(e)}"
+            error_response = {
+                "status": "error",
+                "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "message": error_message,
+            }
+            return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
