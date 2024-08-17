@@ -1,6 +1,6 @@
 import os
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.conf import settings
 from django.db.models import Max, Count, Q
 from django.contrib.auth.hashers import make_password, check_password
@@ -521,6 +521,10 @@ class BusinessDetailsAPI(ModelViewSet):
             else:
                 new_business_id = last_business_id + 1
 
+            # Set the current date and subscription date
+            activation_date = date.today()
+            subscription_date = activation_date + timedelta(days=4)
+
             request.data['marginlength'] = '50'
             request.data['marginwidth'] = '20'
             request.data['brustingfactor'] = '14'
@@ -534,6 +538,8 @@ class BusinessDetailsAPI(ModelViewSet):
             request.data['status'] = "Trial"
             request.data['multiuser'] = 0
             request.data['estimatenote'] = "1.Valid for 15 days only.-2.Taxes extra as applicable, if not mentioned in quotation.-3.Minimum order quantity 1000. If less than 1000, then transport charges extra."
+            request.data['activationdate'] = activation_date
+            request.data['subscriptiondate'] = subscription_date
 
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
