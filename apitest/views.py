@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db.models import Max, Count, Q
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework import generics
@@ -2507,6 +2508,12 @@ class SubscriptionforBusiness(generics.ListAPIView):
     serializer_class = TransactionSerializer
 
     def get(self, request, *args, **kwargs):
+        return self.retrieve_subscription_details(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        return self.update_subscription_end_date(request, *args, **kwargs)
+
+    def retrieve_subscription_details(self, request, *args, **kwargs):
         try:
             business_id = self.kwargs.get("businessid")
 
@@ -2566,7 +2573,6 @@ class SubscriptionforBusiness(generics.ListAPIView):
 
             status = 'Expired' if remaining_days == 0 else ('Trial' if remaining_days <= 4 else 'Active')
 
-
             # Check if remaining_days is 0 and update 'useraccess' for all users under the businessid
             if remaining_days == 0:
                 Userdetails.objects.filter(businessid=business_id, useraccess__lt=3).update(useraccess=1, status='Expired')
@@ -2595,6 +2601,80 @@ class SubscriptionforBusiness(generics.ListAPIView):
                 'message': 'An error occurred',
                 'data': str(e)
             })
+
+    def update_subscription_end_date(self, request, *args, **kwargs):
+        try:
+            business_id = self.kwargs.get("businessid")
+            new_end_date_str = request.data.get('end_date')
+
+            if business_id is None or not new_end_date_str:
+                return Response({
+                    'status': 'fail',
+                    'code': 400,
+                    'message': 'Business ID or new end date not provided',
+                    'data': []
+                })
+
+            # Parse the new end date
+            new_end_date = datetime.strptime(new_end_date_str, '%Y-%m-%d').date()
+
+            # Retrieve the latest transaction for the specified business_id
+            latest_transaction = Transactiondetails.objects.filter(businessid=business_id).order_by('-transactiondate').first()
+
+            if not latest_transaction:
+                return Response({
+                    'status': 'fail',
+                    'code': 404,
+                    'message': 'No transaction found for the provided business ID',
+                    'data': []
+                })
+
+            # Calculate the new duration based on the new end date
+            new_duration = (new_end_date - latest_transaction.transactiondate).days
+
+            # Update the transaction's duration
+            latest_transaction.duration = new_duration
+            latest_transaction.save()
+
+            # Calculate the remaining days
+            current_date = datetime.now().date()
+            remaining_days = max((new_end_date - current_date).days, 0)
+
+            status = 'Expired' if remaining_days == 0 else ('Trial' if remaining_days <= 4 else 'Active')
+
+            # Update the status in Userdetails and Businessdetails
+            if remaining_days == 0:
+                Userdetails.objects.filter(businessid=business_id, useraccess__lt=3).update(useraccess=1, status='Expired')
+            else:
+                Userdetails.objects.filter(businessid=business_id, useraccess__lt=3).update(status=status)
+
+            # Update status in both Userdetails and Businessdetails
+            Userdetails.objects.filter(businessid=business_id).update(status=status)
+            Businessdetails.objects.filter(businessid=business_id).update(status=status)
+
+            # Respond with the updated data
+            response_data = {
+                'status': 'success',
+                'code': 200,
+                'message': f'Updated subscription details for business ID {business_id}',
+                'data': [{
+                    'subscription_date': latest_transaction.transactiondate,
+                    'end_date': new_end_date.strftime("%Y-%m-%d"),
+                    'remaining_days': remaining_days,
+                    'status': status
+                }]
+            }
+
+            return Response(response_data)
+
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'code': 500,
+                'message': 'An error occurred',
+                'data': str(e)
+            })
+
 
 # API for Business by status
 class BusinessByStatus(generics.ListAPIView):
